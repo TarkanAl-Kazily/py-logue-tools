@@ -3,6 +3,7 @@
 
 import argparse
 import utils.midi
+import logue
 
 
 def parse_args():
@@ -13,7 +14,12 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Interact with logue devices")
     parser.add_argument("-l", action="store_true", help="List connected devices")
     parser.add_argument("--port", "-p", type=int, help="Port index")
-    parser.add_argument("--type", "-t", type=str, help="Device type to connect to")
+    parser.add_argument(
+        "--type",
+        "-t",
+        choices=logue.get_logue_target_types(),
+        help="Device type to connect to",
+    )
 
     subparsers = parser.add_subparsers(title="subcommands")
     probe_parser = subparsers.add_parser(
