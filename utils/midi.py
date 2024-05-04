@@ -3,7 +3,7 @@
 import mido
 
 
-def get_midi_ports(verbose: bool = False):
+def get_midi_ports(verbose: bool = False) -> list[str]:
     """
     Optionally print and return detected MIDI ports.
 
@@ -11,25 +11,34 @@ def get_midi_ports(verbose: bool = False):
         verbose: Print detected ports
 
     Returns:
-    - two lists of the input and output port names
+    - list of the ioports detected
     """
-    inputs = []
-    for i, p in enumerate(mido.get_input_names()):
-        inputs.append(p)
-
-    outputs = []
-    for i, p in enumerate(mido.get_output_names()):
-        outputs.append(p)
-
     if verbose:
-        print("  Available MIDI inputs:")
-        for i, p in enumerate(inputs):
-            print(f"    in  {i}: {p}")
-        print()
+        print("  Available Ports:")
 
-        print("  Available MIDI outputs:")
-        for i, p in enumerate(outputs):
-            print(f"    out {i}: {p}")
-        print()
+    ioports = []
+    for i, p in enumerate(mido.get_ioport_names()):
+        ioports.append(p)
+        if verbose:
+            print(f"    port {i}: {p}")
 
-    return inputs, outputs
+    return ioports
+
+
+def get_inout_port(index) -> mido.ports.IOPort | None:
+    """
+    Args:
+        index: Port index to use
+
+    Returns:
+    - mido IOPort or None on error
+    """
+    ioport_names = get_midi_ports()
+
+    try:
+        io_name = ioport_names[index]
+    except KeyError:
+        print(f"{index} port not found")
+        return None
+
+    return mido.open_ioport(io_name)

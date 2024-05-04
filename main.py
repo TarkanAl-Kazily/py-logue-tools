@@ -12,8 +12,7 @@ def parse_args():
     """
     parser = argparse.ArgumentParser(description="Interact with logue devices")
     parser.add_argument("-l", action="store_true", help="List connected devices")
-    parser.add_argument("-i", type=int, help="Input port index")
-    parser.add_argument("-o", type=int, help="Output port index")
+    parser.add_argument("--port", "-p", type=int, help="Port index")
 
     subparsers = parser.add_subparsers(title="subcommands")
     probe_parser = subparsers.add_parser(
@@ -24,8 +23,17 @@ def parse_args():
 
 
 def main(args):
-    # List connected devices
-    inputs, outputs = utils.midi.get_midi_ports(verbose=args.l)
+    # Get connected devices
+    utils.midi.get_midi_ports(verbose=args.l)
+
+    if not hasattr(args, "port"):
+        return
+
+    midi_ioport = utils.midi.get_inout_port(args.port)
+    if midi_ioport is None:
+        return
+
+    print(f"Opened midi_ioport {midi_ioport}")
 
 
 if __name__ == "__main__":
