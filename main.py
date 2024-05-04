@@ -4,6 +4,7 @@
 import argparse
 import utils.midi
 import logue
+import sys
 
 
 def parse_args():
@@ -29,19 +30,25 @@ def parse_args():
     return parser.parse_args()
 
 
-def main(args):
+def main(args) -> int:
     # Get connected devices
     utils.midi.get_midi_ports(verbose=args.l)
 
-    if not hasattr(args, "port"):
-        return
+    if args.port is None:
+        return 0
+
+    if args.type is None:
+        print("type must be provided")
+        return -1
 
     midi_ioport = utils.midi.get_inout_port(args.port)
     if midi_ioport is None:
-        return
+        return -1
 
-    print(f"Opened midi_ioport {midi_ioport}")
+    target_instance = getattr(logue, args.type)(midi_ioport)
+
+    target_instance.inquiry()
 
 
 if __name__ == "__main__":
-    main(parse_args())
+    sys.exit(main(parse_args()))
