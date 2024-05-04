@@ -3,25 +3,33 @@
 import mido
 
 
-def get_midi_ports():
+def get_midi_ports(verbose: bool = False):
     """
-    Print and return detected MIDI ports.
+    Optionally print and return detected MIDI ports.
+
+    Args:
+        verbose: Print detected ports
 
     Returns:
     - two lists of the input and output port names
     """
     inputs = []
-    print("  Available MIDI inputs:")
     for i, p in enumerate(mido.get_input_names()):
-        print(f"    in  {i}: {p}")
         inputs.append(p)
-    print()
 
     outputs = []
-    print("  Available MIDI outputs:")
     for i, p in enumerate(mido.get_output_names()):
-        print(f"    out {i}: {p}")
         outputs.append(p)
-    print()
+
+    if verbose:
+        print("  Available MIDI inputs:")
+        for i, p in enumerate(inputs):
+            print(f"    in  {i}: {p}")
+        print()
+
+        print("  Available MIDI outputs:")
+        for i, p in enumerate(outputs):
+            print(f"    out {i}: {p}")
+        print()
 
     return inputs, outputs
