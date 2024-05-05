@@ -1,7 +1,32 @@
 # Copyright 2024 Tarkan Al-Kazily
 
 import mido.ports
+import mido.midifiles.meta
 import time
+
+
+class LogueMessage:
+    """Base LogueMessage class specific message types can be subclassed from."""
+
+    def __init__(self, data: bytes):
+        self.data = data
+
+    def to_message(self):
+        return mido.Message(type="sysex", data=self.data)
+
+    @classmethod
+    def from_message(cls, message):
+        return LogueMessage(data=message.data)
+
+
+def add_logue_message(message_class: LogueMessage):
+    """
+    Register a LogueMessage with mido.
+
+    Args:
+        message_class: Schema class to register.
+    """
+    mido.midifiles.meta.add_meta_spec(message_class)
 
 
 class LogueTarget:
