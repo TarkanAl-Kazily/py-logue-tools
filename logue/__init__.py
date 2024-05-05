@@ -1,9 +1,11 @@
 # Copyright 2024 Tarkan Al-Kazily
 
 from .sdk2 import NTS1Mk2
+from .sdk1 import NTS1
 
 LOGUE_TARGET_CLASSES = [
     NTS1Mk2,
+    NTS1,
 ]
 
 

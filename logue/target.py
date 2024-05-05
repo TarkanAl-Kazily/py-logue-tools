@@ -60,7 +60,7 @@ class LogueTarget:
 
         for _ in range(10):
             response = self.port.receive(block=False)
-            if response:
+            if response and response.type == "sysex":
                 return response
             time.sleep(0.01)
 
