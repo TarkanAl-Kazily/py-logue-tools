@@ -1,6 +1,7 @@
 # Copyright 2024 Tarkan Al-Kazily
 
 import logue.target
+import binascii
 
 
 class InquiryCommand(logue.target.LogueMessage):
@@ -56,11 +57,11 @@ class InquiryResponse(logue.target.LogueMessage):
     +---------+------------------------------------------------+
     """
 
-    def __init__(self, minor_ver: int, major_ver: int):
+    def __init__(self, major_ver: int, minor_ver: int):
         """
         Args:
-            minor_ver: SDK version number
             major_ver: SDK version number
+            minor_ver: SDK version number
         """
         super().__init__(
             data=[
@@ -89,7 +90,100 @@ class InquiryResponse(logue.target.LogueMessage):
 
         minor_ver = message.data[10] << 7 | message.data[9]
         major_ver = message.data[12] << 7 | message.data[11]
-        return InquiryResponse(minor_ver, major_ver)
+        return InquiryResponse(major_ver, minor_ver)
+
+
+class SearchDeviceCommand(logue.target.LogueMessage):
+    """
+    2-5 SEARCH DEVICE REQUEST
+    +---------+------------------------------------------------+
+    | Byte[H] |                Description                     |
+    +---------+------------------------------------------------+
+    |   F0    | Exclusive Status                               |
+    |   42    | KORG ID              ( Manufacturers ID )      |
+    |   50    | Search Device                                  |
+    |   00    | Request                                        |
+    |   dd    | Echo Back ID                                   |
+    |   F7    | END OF EXCLUSIVE                               |
+    +---------+------------------------------------------------
+    """
+
+    def __init__(self, echo_id: int):
+        """
+        Args:
+            echo_id: 0-127 ID
+        """
+        super().__init__(data=[0x42, 0x50, 0x00, echo_id])
+        self.echo_id = echo_id
+
+    @classmethod
+    def from_message(cls, message):
+        echo_id = message.data[3]
+        return SearchDeviceCommand(echo_id)
+
+
+class SearchDeviceResponse(logue.target.LogueMessage):
+    """
+    1-5 SEARCH DEVICE REPLY
+    +---------+------------------------------------------------+
+    | Byte[H] |                Description                     |
+    +---------+------------------------------------------------+
+    |   F0    | Exclusive Status                               |
+    |   42    | KORG ID              ( Manufacturers ID )      |
+    |   50    | Search Device                                  |
+    |   01    | Reply                                          |
+    |   0g    | g:MIDI Global Channel  ( Device ID )           |
+    |   dd    | Echo Back ID                                   |
+    |   57    | NTS-1 digital kit ID ( Family ID   (LSB))      |
+    |   01    |                      ( Family ID   (MSB))      |
+    |   00    |                      ( Member ID   (LSB))      |
+    |   00    |                      ( Member ID   (MSB))      |
+    |   xx    |                      ( Minor Ver.  (LSB))      |
+    |   xx    |                      ( Minor Ver.  (MSB))      |
+    |   xx    |                      ( Major Ver.  (LSB))      |
+    |   xx    |                      ( Major Ver.  (MSB))      |
+    |   F7    | END OF EXCLUSIVE                               |
+    +---------+------------------------------------------------+
+    """
+
+    def __init__(self, echo_id: int, major_ver: int, minor_ver: int):
+        """
+
+        Args:
+            echo_id: 0-127 ID
+            major_ver: SDK version
+            minor_ver: SDK version
+        """
+        super().__init__(
+            data=[
+                0x42,
+                0x50,
+                0x01,
+                0x00,
+                echo_id,
+                0x57,
+                0x01,
+                0x00,
+                0x00,
+                minor_ver & 0x7F,
+                (minor_ver >> 7) & 0x7F,
+                major_ver & 0x7F,
+                (major_ver >> 7) & 0x7F,
+            ]
+        )
+        self.echo_id = echo_id
+        self.major_ver = major_ver
+        self.minor_ver = minor_ver
+
+    @classmethod
+    def from_message(cls, message):
+        if message.data[0] != 0x42:
+            raise Exception("Invalid message")
+
+        echo_id = message.data[4]
+        minor_ver = message.data[10] << 7 | message.data[9]
+        major_ver = message.data[12] << 7 | message.data[11]
+        return SearchDeviceResponse(echo_id, major_ver, minor_ver)
 
 
 class SDK2(logue.target.LogueTarget):
@@ -113,6 +207,12 @@ class SDK2(logue.target.LogueTarget):
         rsp = self.write_cmd(cmd.to_message())
         rsp = InquiryResponse.from_message(rsp)
         print(f"Device SDK version {rsp.major_ver}.{rsp.minor_ver}")
+
+    def search(self):
+        cmd = SearchDeviceCommand(0x55)
+        rsp = self.write_cmd(cmd.to_message())
+        rsp = SearchDeviceResponse.from_message(rsp)
+        print(f"{rsp.echo_id} Device SDK version {rsp.major_ver}.{rsp.minor_ver}")
 
 
 class NTS1Mk2(SDK2):

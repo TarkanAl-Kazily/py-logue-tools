@@ -48,6 +48,7 @@ def main(args) -> int:
     target_instance = getattr(logue, args.type)(midi_ioport)
 
     target_instance.inquiry()
+    target_instance.search()
 
 
 if __name__ == "__main__":
