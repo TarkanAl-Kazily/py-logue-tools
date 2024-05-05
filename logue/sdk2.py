@@ -1,7 +1,9 @@
 # Copyright 2024 Tarkan Al-Kazily
 
 import logue.target
-import binascii
+
+KORG_ID = 0x42
+EXCLUSIVE_HEADER = [KORG_ID, 0x30, 0x00, 0x01, 0x73]
 
 
 class InquiryCommand(logue.target.LogueMessage):
@@ -69,7 +71,7 @@ class InquiryResponse(logue.target.LogueMessage):
                 0x00,
                 0x06,
                 0x02,
-                0x42,
+                KORG_ID,
                 0x73,
                 0x01,
                 0x01,
@@ -85,7 +87,7 @@ class InquiryResponse(logue.target.LogueMessage):
 
     @classmethod
     def from_message(cls, message):
-        if message.data[4] != 0x42:
+        if message.data[4] != KORG_ID:
             raise Exception("Not a KORG device")
 
         minor_ver = message.data[10] << 7 | message.data[9]
@@ -113,7 +115,7 @@ class SearchDeviceCommand(logue.target.LogueMessage):
         Args:
             echo_id: 0-127 ID
         """
-        super().__init__(data=[0x42, 0x50, 0x00, echo_id])
+        super().__init__(data=[KORG_ID, 0x50, 0x00, echo_id])
         self.echo_id = echo_id
 
     @classmethod
@@ -156,7 +158,7 @@ class SearchDeviceResponse(logue.target.LogueMessage):
         """
         super().__init__(
             data=[
-                0x42,
+                KORG_ID,
                 0x50,
                 0x01,
                 0x00,
@@ -177,13 +179,64 @@ class SearchDeviceResponse(logue.target.LogueMessage):
 
     @classmethod
     def from_message(cls, message):
-        if message.data[0] != 0x42:
+        if message.data[0] != KORG_ID:
             raise Exception("Invalid message")
 
         echo_id = message.data[4]
         minor_ver = message.data[10] << 7 | message.data[9]
         major_ver = message.data[12] << 7 | message.data[11]
         return SearchDeviceResponse(echo_id, major_ver, minor_ver)
+
+
+class CurrentProgramDataDumpCommand(logue.target.LogueMessage):
+    """
+    (1) CURRENT PROGRAM DATA DUMP REQUEST                               R
+    +----------------+--------------------------------------------------+
+    |     Byte       |             Description                          |
+    +----------------+--------------------------------------------------+
+    | F0,42,3g,      | EXCLUSIVE HEADER                                 |
+    |    00,01,73    |                                                  |
+    | 0001 0000 (10) | CURRENT PROGRAM DATA DUMP REQUEST      10H       |
+    | 1111 0111 (F7) | EOX                                              |
+    +----------------+--------------------------------------------------+
+    """
+
+    def __init__(self):
+        super().__init__(data=EXCLUSIVE_HEADER + [0x10])
+
+    @classmethod
+    def from_message(cls, message):
+        return CurrentProgramDataDumpCommand()
+
+
+class CurrentProgramDataDump(logue.target.LogueMessage):
+    """
+    (3) CURRENT PROGRAM DATA DUMP                                     R/T
+    +----------------+--------------------------------------------------+
+    |     Byte       |             Description                          |
+    +----------------+--------------------------------------------------+
+    | F0,42,3g,      | EXCLUSIVE HEADER                                 |
+    |    00,01,73    |                                                  |
+    | 0100 0000 (40) | CURRENT PROGRAM DATA DUMP              40H       |
+    | 0ddd dddd (dd) | Data                                             |
+    | 0ddd dddd (dd) |  :         Data Size         Conv. Size          |
+    | 0ddd dddd (dd) |  :      576Bytes (7bit) -> 505Bytes (8bit)       |
+    | 0ddd dddd (dd) |  :                                               |
+    | 1111 0111 (F7) | EOX                        (See NOTE 1, TABLE 2) |
+    +----------------+--------------------------------------------------+
+    """
+
+    DATA_CONV_SIZE = 505
+
+    def __init__(self, data: bytes):
+        if len(data) != CurrentProgramDataDump.DATA_CONV_SIZE:
+            raise Exception("Incorrect data length")
+
+        super().__init__(data=EXCLUSIVE_HEADER + [0x40] + logue.host_to_midi(data))
+
+    @classmethod
+    def from_message(cls, message):
+        return CurrentProgramDataDumpCommand()
 
 
 class SDK2(logue.target.LogueTarget):
