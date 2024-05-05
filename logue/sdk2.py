@@ -3,7 +3,6 @@
 import logue.target
 
 KORG_ID = 0x42
-EXCLUSIVE_HEADER = [KORG_ID, 0x30, 0x00, 0x01, 0x73]
 
 
 class InquiryCommand(logue.target.LogueMessage):
@@ -188,7 +187,42 @@ class SearchDeviceResponse(logue.target.LogueMessage):
         return SearchDeviceResponse(echo_id, major_ver, minor_ver)
 
 
-class CurrentProgramDataDumpCommand(logue.target.LogueMessage):
+class SystemExclusiveMessage(logue.target.LogueMessage):
+    """
+    Common class for all SDK2 System Exclusive messages which share a common header format.
+    """
+
+    HEADER = [KORG_ID, 0x30, 0x00, 0x01, 0x73]
+
+    def __init__(self, id, payload):
+        super().__init__(data=SystemExclusiveMessage.HEADER + [id] + payload)
+        self.id = id
+        self.payload = payload
+
+    @classmethod
+    def header_from_message(cls, message):
+        return message.data[: len(SystemExclusiveMessage.HEADER)]
+
+    @classmethod
+    def id_from_message(cls, message):
+        return message.data[len(SystemExclusiveMessage.HEADER)]
+
+    @classmethod
+    def payload_from_message(cls, message):
+        return message.data[len(SystemExclusiveMessage.HEADER) + 1 :]
+
+    @classmethod
+    def from_message(cls, message):
+        message_header = SystemExclusiveMessage.header_from_message(message)
+        message_id = SystemExclusiveMessage.id_from_message(message)
+        if message_header != SystemExclusiveMessage.HEADER:
+            raise Exception(f"{message} is not a SystemExclusiveMessage")
+
+        # TODO key off message_id and return appropriate class type
+        raise NotImplementedException()
+
+
+class CurrentProgramDataDumpRequest(SystemExclusiveMessage):
     """
     (1) CURRENT PROGRAM DATA DUMP REQUEST                               R
     +----------------+--------------------------------------------------+
@@ -201,15 +235,26 @@ class CurrentProgramDataDumpCommand(logue.target.LogueMessage):
     +----------------+--------------------------------------------------+
     """
 
+    ID = 0x10
+
     def __init__(self):
-        super().__init__(data=EXCLUSIVE_HEADER + [0x10])
+        super().__init__(id=CurrentProgramDataDumpRequest.ID, payload=[])
 
     @classmethod
     def from_message(cls, message):
-        return CurrentProgramDataDumpCommand()
+        if (
+            SystemExclusiveMessage.id_from_message(message)
+            != CurrentProgramDataDumpRequest.ID
+        ):
+            raise Exception("Incorrect message id")
+
+        if SystemExclusiveMessage.payload_from_message(message) != []:
+            raise Exception("Incorrect payload")
+
+        return CurrentProgramDataDumpRequest()
 
 
-class CurrentProgramDataDump(logue.target.LogueMessage):
+class CurrentProgramDataDump(SystemExclusiveMessage):
     """
     (3) CURRENT PROGRAM DATA DUMP                                     R/T
     +----------------+--------------------------------------------------+
@@ -226,17 +271,29 @@ class CurrentProgramDataDump(logue.target.LogueMessage):
     +----------------+--------------------------------------------------+
     """
 
+    ID = 0x40
     DATA_CONV_SIZE = 505
+    PAYLOAD_SIZE = 576
 
-    def __init__(self, data: bytes):
-        if len(data) != CurrentProgramDataDump.DATA_CONV_SIZE:
+    def __init__(self, program_data: bytes):
+        if len(program_data) != CurrentProgramDataDump.DATA_CONV_SIZE:
             raise Exception("Incorrect data length")
 
-        super().__init__(data=EXCLUSIVE_HEADER + [0x40] + logue.host_to_midi(data))
+        super().__init__(
+            id=CurrentProgramDataDump.ID, payload=logue.host_to_midi(program_data)
+        )
+        self.program_data = program_data
 
     @classmethod
     def from_message(cls, message):
-        return CurrentProgramDataDumpCommand()
+        if SystemExclusiveMessage.id_from_message(message) != CurrentProgramDataDump.ID:
+            raise Exception("Incorrect message id")
+
+        payload = SystemExclusiveMessage.payload_from_message(message)
+        if len(payload) != CurrentProgramDataDump.PAYLOAD_SIZE:
+            raise Exception("Incorrect payload")
+
+        return CurrentProgramDataDump(program_data=logue.midi_to_host(payload))
 
 
 class SDK2(logue.target.LogueTarget):
