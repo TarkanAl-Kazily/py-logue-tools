@@ -1,5 +1,53 @@
 # NTS-1 mkII MIDI messages notes
 
+All important messages are MIDI sysex type messages (beginning with 0xf0)
+
+Categories:
+1. Universal Sysex (Device Inquiry)
+- DEVICE INQUIRY MESSAGE REQUEST
+- DEVICE INQUIRY REPLY
+
+2. System Exclusive (KORG Logue Messages)
+All begin with common header, followed by id value, followed by message specific data payload.
++-------------+-------------------------------------+------+
+|     40      | CURRENT PROGRAM DATA DUMP           | R    |
+|     51      | GLOBAL DATA DUMP                    | R    |
+|             |                                     |      |
+|     47      | USER API VERSION                    | R    |
+|     48      | USER MODULE INFO                    | R    |
+|     49      | USER SLOT STATUS                    | R    |
+|     4A      | USER SLOT DATA                      | R    |
+|             |                                     |      |
+|     7E      | CURRENT PROGRAM CHANGED             | C    |
+|             |                                     |      |
+|    23-2F    | STATUS (ACK/NAK)                    | E    |
++-------------+-------------------------------------+------+
+
++-------------+-------------------------------------+------+
+|     10      | CURRENT PROGRAM DATA DUMP REQUEST          |
+|     0E      | GLOBAL DATA DUMP REQUEST                   |
+|             |                                            |
+|     40      | ^^CURRENT PROGRAM DATA DUMP                |
+|     51      | ^^GLOBAL DATA DUMP                         |
+|             |                                            |
+|     17      | USER API VERSION REQUEST                   |
+|     18      | USER MODULE INFO REQUEST                   |
+|     19      | USER SLOT STATUS REQUEST                   |
+|     1A      | USER SLOT DATA REQUEST                     |
+|     1B      | CLEAR USER SLOT                            |
+|     1D      | CLEAR USER MODULE                          |
+|     1E      | SWAP USER DATA                             |
+|             |                                            |
+|     47      | ^^USER API VERSION                         |
+|     48      | ^^USER MODULE INFO                         |
+|     49      | ^^USER SLOT STATUS                         |
+|     4A      | ^^USER SLOT DATA                           |
++-------------+-------------------------------------+------+
+
+3. Search Device
+- SEARCH DEVICE REQUEST
+- SEARCH DEVICE REPLY
+
 ## Receivable
 * 2-3 UNIVERSAL SYSTEM EXCLUSIVE MESSAGE ( NON REALTIME ) DEVICE INQUIRY MESSAGE REQUEST
 * 2-4 SYSTEM EXCLUSIVE MESSAGE
