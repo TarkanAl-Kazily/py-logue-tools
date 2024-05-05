@@ -19,16 +19,6 @@ class LogueMessage:
         return LogueMessage(data=message.data)
 
 
-def add_logue_message(message_class: LogueMessage):
-    """
-    Register a LogueMessage with mido.
-
-    Args:
-        message_class: Schema class to register.
-    """
-    mido.midifiles.meta.add_meta_spec(message_class)
-
-
 class LogueTarget:
     """
     Base class defining a Logue-SDK compatible device.
