@@ -9,6 +9,8 @@ LOGUE_TARGET_CLASSES = [
     NTS1,
 ]
 
+KORG_ID = 0x42
+
 
 def get_logue_target_types() -> list[str]:
     """

@@ -4,8 +4,6 @@ import logue
 import logue.target
 from logue.common import InquiryRequest, SearchDeviceRequest
 
-KORG_ID = 0x42
-
 
 def id_only_from_message(cls, message):
     if SystemExclusiveMessage.id_from_message(message) != id:
@@ -53,7 +51,7 @@ class InquiryResponse(logue.target.LogueMessage):
                 0x00,
                 0x06,
                 0x02,
-                KORG_ID,
+                logue.KORG_ID,
                 0x73,
                 0x01,
                 0x01,
@@ -69,7 +67,7 @@ class InquiryResponse(logue.target.LogueMessage):
 
     @classmethod
     def from_message(cls, message):
-        if message.data[4] != KORG_ID:
+        if message.data[4] != logue.KORG_ID:
             raise Exception("Not a KORG device")
 
         minor_ver = message.data[10] << 7 | message.data[9]
@@ -111,7 +109,7 @@ class SearchDeviceResponse(logue.target.LogueMessage):
         """
         super().__init__(
             data=[
-                KORG_ID,
+                logue.KORG_ID,
                 0x50,
                 0x01,
                 0x00,
@@ -132,7 +130,7 @@ class SearchDeviceResponse(logue.target.LogueMessage):
 
     @classmethod
     def from_message(cls, message):
-        if message.data[0] != KORG_ID:
+        if message.data[0] != logue.KORG_ID:
             raise Exception("Invalid message")
 
         echo_id = message.data[4]
@@ -146,7 +144,7 @@ class SystemExclusiveMessage(logue.target.LogueMessage):
     Common class for all SDK2 System Exclusive messages which share a common header format.
     """
 
-    HEADER = [KORG_ID, 0x30, 0x00, 0x01, 0x73]
+    HEADER = [logue.KORG_ID, 0x30, 0x00, 0x01, 0x73]
 
     def __init__(self, id, payload):
         super().__init__(data=SystemExclusiveMessage.HEADER + [id] + payload)
