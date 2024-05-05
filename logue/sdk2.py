@@ -321,8 +321,6 @@ class GlobalDataDump(SystemExclusiveMessage):
         super().__init__(id=GlobalDataDump.ID, payload=logue.host_to_midi(program_data))
         self.program_data = program_data
 
-        raise NotImplementedError()
-
     @classmethod
     def from_message(cls, message):
         if SystemExclusiveMessage.id_from_message(message) != GlobalDataDump.ID:
@@ -891,6 +889,10 @@ class SDK2(logue.target.LogueTarget):
         rsp = self.write_cmd(cmd.to_message())
         rsp = CurrentProgramDataDump.from_message(rsp)
         print(rsp)
+
+        cmd = GlobalDataDumpRequest()
+        rsp = self.write_cmd(cmd.to_message())
+        rsp = GlobalDataDump.from_message(rsp)
 
 
 class NTS1Mk2(SDK2):
