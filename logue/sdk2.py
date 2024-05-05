@@ -5,7 +5,7 @@ import logue.target
 KORG_ID = 0x42
 
 
-class InquiryCommand(logue.target.LogueMessage):
+class InquiryRequest(logue.target.LogueMessage):
     """
      DEVICE INQUIRY MESSAGE REQUEST
     +---------+------------------------------------------------+
@@ -31,7 +31,7 @@ class InquiryCommand(logue.target.LogueMessage):
     @classmethod
     def from_message(message):
         channel = message.data[1] + 1
-        return InquiryCommand(channel)
+        return InquiryRequest(channel)
 
 
 class InquiryResponse(logue.target.LogueMessage):
@@ -312,7 +312,7 @@ class SDK2(logue.target.LogueTarget):
         """
         From the NTS-1mkII_MIDIimp.txt:
         """
-        cmd = InquiryCommand(self.channel)
+        cmd = InquiryRequest(self.channel)
         rsp = self.write_cmd(cmd.to_message())
         rsp = InquiryResponse.from_message(rsp)
         print(f"Device SDK version {rsp.major_ver}.{rsp.minor_ver}")

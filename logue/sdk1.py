@@ -3,7 +3,7 @@
 import logue.target
 
 
-class InquiryCommand(logue.target.LogueMessage):
+class InquiryRequest(logue.target.LogueMessage):
     """
      DEVICE INQUIRY MESSAGE REQUEST
     +---------+------------------------------------------------+
@@ -29,7 +29,7 @@ class InquiryCommand(logue.target.LogueMessage):
     @classmethod
     def from_message(cls, message):
         channel = message.data[1] + 1
-        return InquiryCommand(channel)
+        return InquiryRequest(channel)
 
 
 class InquiryResponse(logue.target.LogueMessage):
@@ -202,7 +202,7 @@ class SDK1(logue.target.LogueTarget):
         super().__init__(ioport=ioport, channel=channel)
 
     def inquiry(self):
-        cmd = InquiryCommand(self.channel)
+        cmd = InquiryRequest(self.channel)
         rsp = self.write_cmd(cmd.to_message())
         rsp = InquiryResponse.from_message(rsp)
         # The NTS-1 seems to swap Major and Minor versions
