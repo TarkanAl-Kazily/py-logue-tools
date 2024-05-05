@@ -30,3 +30,32 @@ class InquiryRequest(logue.target.LogueMessage):
     def from_message(cls, message):
         channel = message.data[1] + 1
         return InquiryRequest(channel)
+
+
+class SearchDeviceRequest(logue.target.LogueMessage):
+    """
+    2-5 SEARCH DEVICE REQUEST
+    +---------+------------------------------------------------+
+    | Byte[H] |                Description                     |
+    +---------+------------------------------------------------+
+    |   F0    | Exclusive Status                               |
+    |   42    | KORG ID              ( Manufacturers ID )      |
+    |   50    | Search Device                                  |
+    |   00    | Request                                        |
+    |   dd    | Echo Back ID                                   |
+    |   F7    | END OF EXCLUSIVE                               |
+    +---------+------------------------------------------------
+    """
+
+    def __init__(self, echo_id: int):
+        """
+        Args:
+            echo_id: 0-127 ID
+        """
+        super().__init__(data=[0x42, 0x50, 0x00, echo_id])
+        self.echo_id = echo_id
+
+    @classmethod
+    def from_message(cls, message):
+        echo_id = message.data[3]
+        return SearchDeviceRequest(echo_id)

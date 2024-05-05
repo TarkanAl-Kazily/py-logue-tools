@@ -1,7 +1,7 @@
 # Copyright 2024 Tarkan Al-Kazily
 
 import logue.target
-from logue.common import InquiryRequest
+from logue.common import InquiryRequest, SearchDeviceRequest
 
 KORG_ID = 0x42
 
@@ -64,35 +64,6 @@ class InquiryResponse(logue.target.LogueMessage):
         minor_ver = message.data[10] << 7 | message.data[9]
         major_ver = message.data[12] << 7 | message.data[11]
         return InquiryResponse(major_ver, minor_ver)
-
-
-class SearchDeviceCommand(logue.target.LogueMessage):
-    """
-    2-5 SEARCH DEVICE REQUEST
-    +---------+------------------------------------------------+
-    | Byte[H] |                Description                     |
-    +---------+------------------------------------------------+
-    |   F0    | Exclusive Status                               |
-    |   42    | KORG ID              ( Manufacturers ID )      |
-    |   50    | Search Device                                  |
-    |   00    | Request                                        |
-    |   dd    | Echo Back ID                                   |
-    |   F7    | END OF EXCLUSIVE                               |
-    +---------+------------------------------------------------
-    """
-
-    def __init__(self, echo_id: int):
-        """
-        Args:
-            echo_id: 0-127 ID
-        """
-        super().__init__(data=[KORG_ID, 0x50, 0x00, echo_id])
-        self.echo_id = echo_id
-
-    @classmethod
-    def from_message(cls, message):
-        echo_id = message.data[3]
-        return SearchDeviceCommand(echo_id)
 
 
 class SearchDeviceResponse(logue.target.LogueMessage):
@@ -290,7 +261,7 @@ class SDK2(logue.target.LogueTarget):
         print(f"Device SDK version {rsp.major_ver}.{rsp.minor_ver}")
 
     def search(self):
-        cmd = SearchDeviceCommand(0x55)
+        cmd = SearchDeviceRequest(0x55)
         rsp = self.write_cmd(cmd.to_message())
         rsp = SearchDeviceResponse.from_message(rsp)
         print(f"{rsp.echo_id} Device SDK version {rsp.major_ver}.{rsp.minor_ver}")
