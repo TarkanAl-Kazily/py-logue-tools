@@ -7,10 +7,10 @@ from logue.common import InquiryRequest, SearchDeviceRequest
 
 def id_only_from_message(cls, message):
     if SystemExclusiveMessage.id_from_message(message) != id:
-        raise Exception("Incorrect message type")
+        raise logue.LogueError("Incorrect message type")
 
     if SystemExclusiveMessage.payload_from_message(message) != []:
-        raise Exception("Incorrect message type")
+        raise logue.LogueError("Incorrect message with non-empty payload")
 
     return cls()
 
@@ -68,7 +68,7 @@ class InquiryResponse(logue.target.LogueMessage):
     @classmethod
     def from_message(cls, message):
         if message.data[4] != logue.KORG_ID:
-            raise Exception("Not a KORG device")
+            raise logue.LogueError("Not a KORG device")
 
         minor_ver = message.data[10] << 7 | message.data[9]
         major_ver = message.data[12] << 7 | message.data[11]
@@ -131,7 +131,7 @@ class SearchDeviceResponse(logue.target.LogueMessage):
     @classmethod
     def from_message(cls, message):
         if message.data[0] != logue.KORG_ID:
-            raise Exception("Invalid message")
+            raise logue.LogueError("Invalid message")
 
         echo_id = message.data[4]
         minor_ver = message.data[10] << 7 | message.data[9]
@@ -168,14 +168,14 @@ class SystemExclusiveMessage(logue.target.LogueMessage):
         message_header = SystemExclusiveMessage.header_from_message(message)
         message_id = SystemExclusiveMessage.id_from_message(message)
         if message_header != SystemExclusiveMessage.HEADER:
-            raise Exception(f"{message} is not a SystemExclusiveMessage")
+            raise logue.LogueError(f"{message} is not a SystemExclusiveMessage")
 
         # Search for a supported message type based on the exclusive id
         for subcls in SystemExclusiveMessage.__subclasses__():
             if subcls.ID == message_id:
                 return subcls.from_message(message)
 
-        raise Exception(
+        raise logue.LogueError(
             f"Received system exclusive message with unknown id {message_id}"
         )
 
@@ -249,23 +249,23 @@ class CurrentProgramDataDump(SystemExclusiveMessage):
 
     def __init__(self, program_data: list[int]):
         if len(program_data) != CurrentProgramDataDump.HOST_PAYLOAD_SIZE:
-            raise Exception("Incorrect data length")
+            raise logue.LogueError("Incorrect data length")
 
         super().__init__(
             id=CurrentProgramDataDump.ID, payload=logue.host_to_midi(program_data)
         )
         self.program_data = program_data
 
-        raise NotImplementedException()
+        raise NotImplementedError()
 
     @classmethod
     def from_message(cls, message):
         if SystemExclusiveMessage.id_from_message(message) != CurrentProgramDataDump.ID:
-            raise Exception("Incorrect message id")
+            raise logue.LogueError("Incorrect message id")
 
         payload = SystemExclusiveMessage.payload_from_message(message)
         if len(payload) != CurrentProgramDataDump.MIDI_PAYLOAD_SIZE:
-            raise Exception("Incorrect payload")
+            raise logue.LogueError("Incorrect payload")
 
         return CurrentProgramDataDump(program_data=logue.midi_to_host(payload))
 
@@ -293,21 +293,21 @@ class GlobalDataDump(SystemExclusiveMessage):
 
     def __init__(self, program_data: list[int]):
         if len(program_data) != GlobalDataDump.HOST_PAYLOAD_SIZE:
-            raise Exception("Incorrect data length")
+            raise logue.LogueError("Incorrect data length")
 
         super().__init__(id=GlobalDataDump.ID, payload=logue.host_to_midi(program_data))
         self.program_data = program_data
 
-        raise NotImplementedException()
+        raise NotImplementedError()
 
     @classmethod
     def from_message(cls, message):
         if SystemExclusiveMessage.id_from_message(message) != GlobalDataDump.ID:
-            raise Exception("Incorrect message id")
+            raise logue.LogueError("Incorrect message id")
 
         payload = SystemExclusiveMessage.payload_from_message(message)
         if len(payload) != GlobalDataDump.MIDI_PAYLOAD_SIZE:
-            raise Exception("Incorrect payload")
+            raise logue.LogueError("Incorrect payload")
 
         return GlobalDataDump(program_data=logue.midi_to_host(payload))
 
@@ -358,11 +358,11 @@ class UserModuleInfoRequest(SystemExclusiveMessage):
     @classmethod
     def from_message(cls, message):
         if SystemExclusiveMessage.id_from_message(message) != UserModuleInfoRequest.ID:
-            raise Exception("Incorrect message id")
+            raise logue.LogueError("Incorrect message id")
 
         payload = SystemExclusiveMessage.payload_from_message(message)
         if len(payload) != 1:
-            raise Exception("Incorrect payload")
+            raise logue.LogueError("Incorrect payload")
 
         return UserModuleInfoRequest(module_id=payload[0])
 
@@ -392,11 +392,11 @@ class UserSlotStatusRequest(SystemExclusiveMessage):
     @classmethod
     def from_message(cls, message):
         if SystemExclusiveMessage.id_from_message(message) != UserSlotStatusRequest.ID:
-            raise Exception("Incorrect message id")
+            raise logue.LogueError("Incorrect message id")
 
         payload = SystemExclusiveMessage.payload_from_message(message)
         if len(payload) != 2:
-            raise Exception("Incorrect payload")
+            raise logue.LogueError("Incorrect payload")
 
         return UserSlotStatusRequest(module_id=payload[0], slot_id=payload[1])
 
@@ -426,11 +426,11 @@ class UserSlotDataRequest(SystemExclusiveMessage):
     @classmethod
     def from_message(cls, message):
         if SystemExclusiveMessage.id_from_message(message) != UserSlotDataRequest.ID:
-            raise Exception("Incorrect message id")
+            raise logue.LogueError("Incorrect message id")
 
         payload = SystemExclusiveMessage.payload_from_message(message)
         if len(payload) != 2:
-            raise Exception("Incorrect payload")
+            raise logue.LogueError("Incorrect payload")
 
         return UserSlotDataRequest(module_id=payload[0], slot_id=payload[1])
 
@@ -460,11 +460,11 @@ class ClearUserSlot(SystemExclusiveMessage):
     @classmethod
     def from_message(cls, message):
         if SystemExclusiveMessage.id_from_message(message) != ClearUserSlot.ID:
-            raise Exception("Incorrect message id")
+            raise logue.LogueError("Incorrect message id")
 
         payload = SystemExclusiveMessage.payload_from_message(message)
         if len(payload) != 2:
-            raise Exception("Incorrect payload")
+            raise logue.LogueError("Incorrect payload")
 
         return ClearUserSlot(module_id=payload[0], slot_id=payload[1])
 
@@ -492,11 +492,11 @@ class ClearUserModule(SystemExclusiveMessage):
     @classmethod
     def from_message(cls, message):
         if SystemExclusiveMessage.id_from_message(message) != ClearUserModule.ID:
-            raise Exception("Incorrect message id")
+            raise logue.LogueError("Incorrect message id")
 
         payload = SystemExclusiveMessage.payload_from_message(message)
         if len(payload) != 1:
-            raise Exception("Incorrect payload")
+            raise logue.LogueError("Incorrect payload")
 
         return ClearUserModule(module_id=payload[0])
 
@@ -528,11 +528,11 @@ class SwapUserData(SystemExclusiveMessage):
     @classmethod
     def from_message(cls, message):
         if SystemExclusiveMessage.id_from_message(message) != SwapUserData.ID:
-            raise Exception("Incorrect message id")
+            raise logue.LogueError("Incorrect message id")
 
         payload = SystemExclusiveMessage.payload_from_message(message)
         if len(payload) != 3:
-            raise Exception("Incorrect payload")
+            raise logue.LogueError("Incorrect payload")
 
         return SwapUserData(module_id=payload[0], slot1=payload[1], slot2=payload[2])
 
@@ -568,11 +568,11 @@ class UserApiVersion(SystemExclusiveMessage):
     @classmethod
     def from_message(cls, message):
         if SystemExclusiveMessage.id_from_message(message) != UserApiVersion.ID:
-            raise Exception("Incorrect message id")
+            raise logue.LogueError("Incorrect message id")
 
         payload = SystemExclusiveMessage.payload_from_message(message)
         if len(payload) != 4:
-            raise Exception("Incorrect payload")
+            raise logue.LogueError("Incorrect payload")
 
         return UserApiVersion(
             platform_id=payload[0], major=payload[1], minor=payload[2], patch=payload[3]
@@ -603,7 +603,7 @@ class UserModuleInfo(SystemExclusiveMessage):
 
     def __init__(self, program_data: list[int]):
         if len(program_data) != UserModuleInfo.HOST_PAYLOAD_SIZE:
-            raise Exception("Incorrect program_data size")
+            raise logue.LogueError("Incorrect program_data size")
 
         super().__init__(id=UserModuleInfo.ID, payload=logue.host_to_midi(program_data))
         self.program_data = program_data
@@ -611,11 +611,11 @@ class UserModuleInfo(SystemExclusiveMessage):
     @classmethod
     def from_message(cls, message):
         if SystemExclusiveMessage.id_from_message(message) != UserModuleInfo.ID:
-            raise Exception("Incorrect message id")
+            raise logue.LogueError("Incorrect message id")
 
         payload = SystemExclusiveMessage.payload_from_message(message)
         if len(payload) != UserModuleInfo.MIDI_PAYLOAD_SIZE:
-            raise Exception("Incorrect payload")
+            raise logue.LogueError("Incorrect payload")
 
         return UserModuleInfo(program_data=logue.midi_to_host(payload))
 
@@ -646,7 +646,7 @@ class UserSlotStatus(SystemExclusiveMessage):
 
     def __init__(self, module_id: int, slot_id: int, program_data: list[int]):
         if len(program_data) != UserSlotStatus.HOST_PAYLOAD_SIZE:
-            raise Exception("Incorrect program_data size")
+            raise logue.LogueError("Incorrect program_data size")
         super().__init__(
             id=UserSlotStatus.ID,
             payload=[module_id, slot_id] + logue.host_to_midi(program_data),
@@ -658,11 +658,11 @@ class UserSlotStatus(SystemExclusiveMessage):
     @classmethod
     def from_message(cls, message):
         if SystemExclusiveMessage.id_from_message(message) != UserSlotStatus.ID:
-            raise Exception("Incorrect message id")
+            raise logue.LogueError("Incorrect message id")
 
         payload = SystemExclusiveMessage.payload_from_message(message)
         if len(payload) != 2 + UserSlotStatus.MIDI_PAYLOAD_SIZE:
-            raise Exception("Incorrect payload")
+            raise logue.LogueError("Incorrect payload")
 
         return UserSlotStatus(
             module_id=payload[0],
@@ -698,7 +698,7 @@ class UserSlotData(SystemExclusiveMessage):
     @classmethod
     def from_message(cls, message):
         if SystemExclusiveMessage.id_from_message(message) != UserSlotData.ID:
-            raise Exception("Incorrect message id")
+            raise logue.LogueError("Incorrect message id")
 
         payload = SystemExclusiveMessage.payload_from_message(message)
         return UserSlotData(program_data=logue.midi_to_host(payload))

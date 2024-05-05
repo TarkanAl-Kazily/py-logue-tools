@@ -5,6 +5,10 @@ import mido.midifiles.meta
 import time
 
 
+class LogueError(Exception):
+    """Base Logue Exception class"""
+
+
 class LogueMessage:
     """Base LogueMessage class specific message types can be subclassed from."""
 
@@ -54,16 +58,16 @@ class LogueTarget:
                 return response
             time.sleep(0.01)
 
-        raise Exception("Timeout")
+        raise LogueError("Did not receive a sysex message before timeout")
 
     def inquiry(self):
         """
         Perform an inquiry request reply handshake with the device.
         """
-        raise NotImplemented()
+        raise NotImplementedError()
 
     def search(self):
         """
         Perform an search for available KORG devices.
         """
-        raise NotImplemented()
+        raise NotImplementedError()
