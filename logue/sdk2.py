@@ -241,22 +241,22 @@ class CurrentProgramDataDump(SystemExclusiveMessage):
     | 0ddd dddd (dd) |  :                                               |
     | 1111 0111 (F7) | EOX                        (See NOTE 1, TABLE 2) |
     +----------------+--------------------------------------------------+
+
+    NOTE: Actual host size is 504 bytes long
     """
 
     ID = 0x40
-    HOST_PAYLOAD_SIZE = 505
+    HOST_PAYLOAD_SIZE = 504
     MIDI_PAYLOAD_SIZE = 576
 
     def __init__(self, program_data: list[int]):
         if len(program_data) != CurrentProgramDataDump.HOST_PAYLOAD_SIZE:
-            raise logue.LogueError("Incorrect data length")
+            raise logue.LogueError(f"Incorrect data length {len(program_data)}")
 
         super().__init__(
             id=CurrentProgramDataDump.ID, payload=logue.host_to_midi(program_data)
         )
         self.program_data = program_data
-
-        raise NotImplementedError()
 
     @classmethod
     def from_message(cls, message):
@@ -861,7 +861,13 @@ class SDK2(logue.target.LogueTarget):
         cmd = SearchDeviceRequest(0x55)
         rsp = self.write_cmd(cmd.to_message())
         rsp = SearchDeviceResponse.from_message(rsp)
-        print(f"{rsp.echo_id} Device SDK version {rsp.major_ver}.{rsp.minor_ver}")
+        print(f"Device SDK version {rsp.major_ver}.{rsp.minor_ver}")
+
+    def dump_data(self):
+        cmd = CurrentProgramDataDumpRequest()
+        rsp = self.write_cmd(cmd.to_message())
+        rsp = CurrentProgramDataDump.from_message(rsp)
+        print(f"Got data dump {rsp.program_data}")
 
 
 class NTS1Mk2(SDK2):

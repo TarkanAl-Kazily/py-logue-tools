@@ -49,6 +49,7 @@ def main(args) -> int:
 
     target_instance.inquiry()
     target_instance.search()
+    target_instance.dump_data()
 
 
 if __name__ == "__main__":
