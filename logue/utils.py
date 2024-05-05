@@ -1,7 +1,7 @@
 # Copyright 2024 Tarkan Al-Kazily
 
 
-def host_to_midi(data: bytes) -> bytes:
+def host_to_midi(data: list[int]) -> list[int]:
     """
     Convert host formatted 8-bit data to Korg's midi 7-bit data format
 
@@ -27,7 +27,18 @@ def host_to_midi(data: bytes) -> bytes:
     Returns:
         bytes in range 0-127 suitable for sending over MIDI
     """
-    raise NotImplementedException()
+    result = []
+    for i in range(0, len(data), 7):
+        slice_end = i + 7
+        if slice_end > len(data):
+            slice_end = len(data)
+        slice = [0x00] + data[i:slice_end]
+        for bit, byte in enumerate(slice[1:]):
+            mask = (byte & 0x80) >> (7 - bit)
+            slice[0] = slice[0] | mask
+        slice = [b & 0x7F for b in slice]
+        result += slice
+    return result
 
 
 def midi_to_host(data: bytes) -> bytes:
@@ -56,4 +67,14 @@ def midi_to_host(data: bytes) -> bytes:
     Returns:
         8-bit host data
     """
-    raise NotImplementedException()
+    result = []
+    for i in range(0, len(data), 8):
+        slice_end = i + 8
+        if slice_end > len(data):
+            slice_end = len(data)
+        msbits = data[i]
+        slice = data[i + 1 : slice_end]
+        for bit, byte in enumerate(slice):
+            mask = (msbits & (0x1 << bit)) << (7 - bit)
+            result.append(byte | mask)
+    return result

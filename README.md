@@ -10,6 +10,21 @@ programming and device interaction functions that their primary tool `logue-cli`
 This repository is experimentation in implementing a custom version of the `logue-cli` tool's
 functionality based on these MIDI implementation specifications.
 
+## Lint and Tests
+
+Linting is enforced by the Python Black linter (through git pre-commit hooks).
+
+Manually run the linter:
+```
+pre-commit run --all-files
+```
+
+Tests are implemented with Python's unittest framework. Manually run all tests:
+```
+python -m unittest discover tests/
+```
+
+
 ## Links
 
 * [logue-sdk repo](https://github.com/korginc/logue-sdk)
