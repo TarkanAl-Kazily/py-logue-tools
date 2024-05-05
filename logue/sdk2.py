@@ -258,6 +258,13 @@ class CurrentProgramDataDump(SystemExclusiveMessage):
         )
         self.program_data = program_data
 
+        if bytes(program_data[0:4]) != "PROG".encode("ascii") or bytes(
+            program_data[-4:]
+        ) != "PRED".encode("ascii"):
+            raise logue.LogueError(
+                f"Incorrect program_data format - {program_data[0:4]} {program_data[-4:]}"
+            )
+
     @classmethod
     def from_message(cls, message):
         if SystemExclusiveMessage.id_from_message(message) != CurrentProgramDataDump.ID:
@@ -268,6 +275,22 @@ class CurrentProgramDataDump(SystemExclusiveMessage):
             raise logue.LogueError("Incorrect payload")
 
         return CurrentProgramDataDump(program_data=logue.midi_to_host(payload))
+
+    def __repr__(self):
+        result = ""
+        maj_ver = (self.program_data[4] << 8) | self.program_data[5]
+        min_ver = self.program_data[6]
+        patch = self.program_data[7]
+        result += f"ver {maj_ver}.{min_ver}.{patch}"
+
+        prog_name = bytes(self.program_data[12:28]).decode("ascii")
+        osc_name = bytes(self.program_data[40:60]).decode("ascii")
+        mod_name = bytes(self.program_data[124:144]).decode("ascii")
+        delay_name = bytes(self.program_data[180:200]).decode("ascii")
+        rvb_name = bytes(self.program_data[236:256]).decode("ascii")
+
+        result += f" {prog_name}: osc {osc_name} mod {mod_name} delay {delay_name} reverb {rvb_name}"
+        return result
 
 
 class GlobalDataDump(SystemExclusiveMessage):
@@ -867,7 +890,7 @@ class SDK2(logue.target.LogueTarget):
         cmd = CurrentProgramDataDumpRequest()
         rsp = self.write_cmd(cmd.to_message())
         rsp = CurrentProgramDataDump.from_message(rsp)
-        print(f"Got data dump {rsp.program_data}")
+        print(rsp)
 
 
 class NTS1Mk2(SDK2):
