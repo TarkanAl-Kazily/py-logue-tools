@@ -61,3 +61,9 @@ class LogueTarget:
         Perform an inquiry request reply handshake with the device.
         """
         raise NotImplemented()
+
+    def search(self):
+        """
+        Perform an search for available KORG devices.
+        """
+        raise NotImplemented()
