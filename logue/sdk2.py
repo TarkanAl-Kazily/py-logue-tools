@@ -255,7 +255,6 @@ class SDK2(logue.target.LogueTarget):
         """
         From the NTS-1mkII_MIDIimp.txt:
         """
-
         cmd = InquiryCommand(self.channel)
         rsp = self.write_cmd(cmd.to_message())
         rsp = InquiryResponse.from_message(rsp)
