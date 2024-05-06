@@ -33,6 +33,9 @@ python -m unittest discover tests/
 
 ## Tool goals
 
-The objective of this work will be to create a tool initially matching the primary features of `logue-cli`, which are:
-* `probe` connected devices to list their loaded programs
-* `load` new units and presets
+The objective of this work will be to implement useful functions for interacting with `logue`
+devices.
+
+* `save` will save active settings or presets to a file.
+* `load` will restore settings or presets from a file.
+* `download` will install a user module to a slot.
