@@ -4,14 +4,15 @@ import typing
 import json
 import logue
 import logue.target
+import mido
 from logue.common import InquiryRequest, SearchDeviceRequest
 
 
 def id_only_from_message(cls, message):
-    if SystemExclusiveMessage.id_from_message(message) != id:
+    if SystemExclusiveMessage.id_from_message(message) != cls.ID:
         raise logue.LogueError("Incorrect message type")
 
-    if SystemExclusiveMessage.payload_from_message(message) != []:
+    if len(SystemExclusiveMessage.payload_from_message(message)) != 0:
         raise logue.LogueError("Incorrect message with non-empty payload")
 
     return cls()
@@ -169,7 +170,7 @@ class SystemExclusiveMessage(logue.target.LogueMessage):
     def from_message(cls, message):
         message_header = SystemExclusiveMessage.header_from_message(message)
         message_id = SystemExclusiveMessage.id_from_message(message)
-        if message_header != SystemExclusiveMessage.HEADER:
+        if list(message_header) != SystemExclusiveMessage.HEADER:
             raise logue.LogueError(f"{message} is not a SystemExclusiveMessage")
 
         # Search for a supported message type based on the exclusive id
@@ -897,10 +898,31 @@ class SDK2(logue.target.LogueTarget):
 
         cmd = GlobalDataDumpRequest()
         rsp = self.write_cmd(cmd.to_message())
-        save_data["GlobalDataDumpRequest"] = str(rsp)
+        save_data["GlobalDataDump"] = str(rsp)
         rsp = GlobalDataDump.from_message(rsp)
 
         json.dump(save_data, file)
+
+    def load_data(self, file: typing.IO):
+        load_data = json.load(file)
+        print(load_data["description"])
+        cmd = CurrentProgramDataDump.from_message(
+            mido.parse_string(load_data["CurrentProgramDataDump"])
+        )
+        rsp = self.write_cmd(cmd.to_message())
+        rsp = SystemExclusiveMessage.from_message(rsp)
+        if not isinstance(rsp, StatusOperationCompleted):
+            print(f"An error occurred - {type(rsp)}")
+            return
+
+        cmd = GlobalDataDump.from_message(
+            mido.parse_string(load_data["GlobalDataDump"])
+        )
+        rsp = self.write_cmd(cmd.to_message())
+        rsp = SystemExclusiveMessage.from_message(rsp)
+        if not isinstance(rsp, StatusOperationCompleted):
+            print(f"An error occurred - {type(rsp)}")
+            return
 
 
 class NTS1Mk2(SDK2):

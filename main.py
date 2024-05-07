@@ -28,6 +28,11 @@ def parse_args():
         description="Save presets to a file",
     )
     save_parser.add_argument("--file", "-f", type=str, help="File to save to")
+    load_parser = subparsers.add_parser(
+        "load",
+        description="Load presets from a file",
+    )
+    load_parser.add_argument("--file", "-f", type=str, help="File to load from")
 
     return parser.parse_args()
 
@@ -54,6 +59,10 @@ def main(args) -> int:
     if args.subcommand == "save":
         with open(args.file, "w") as f:
             target_instance.save_data(f)
+
+    if args.subcommand == "load":
+        with open(args.file, "r") as f:
+            target_instance.load_data(f)
 
 
 if __name__ == "__main__":
