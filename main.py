@@ -22,10 +22,12 @@ def parse_args():
         help="Device type to connect to",
     )
 
-    subparsers = parser.add_subparsers(title="subcommands")
-    probe_parser = subparsers.add_parser(
-        "probe", description="Query loaded logue programs"
+    subparsers = parser.add_subparsers(title="subcommands", dest="subcommand")
+    save_parser = subparsers.add_parser(
+        "save",
+        description="Save presets to a file",
     )
+    save_parser.add_argument("--file", "-f", type=str, help="File to save to")
 
     return parser.parse_args()
 
@@ -48,8 +50,10 @@ def main(args) -> int:
     target_instance = getattr(logue, args.type)(midi_ioport)
 
     target_instance.inquiry()
-    target_instance.search()
-    target_instance.dump_data()
+
+    if args.subcommand == "save":
+        with open(args.file, "w") as f:
+            target_instance.save_data(f)
 
 
 if __name__ == "__main__":

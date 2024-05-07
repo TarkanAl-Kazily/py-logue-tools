@@ -1,5 +1,7 @@
 # Copyright 2024 Tarkan Al-Kazily
 
+import typing
+import json
 import logue
 import logue.target
 from logue.common import InquiryRequest, SearchDeviceRequest
@@ -884,15 +886,21 @@ class SDK2(logue.target.LogueTarget):
         rsp = SearchDeviceResponse.from_message(rsp)
         print(f"Device SDK version {rsp.major_ver}.{rsp.minor_ver}")
 
-    def dump_data(self):
+    def save_data(self, file: typing.IO):
+        save_data = {}
         cmd = CurrentProgramDataDumpRequest()
         rsp = self.write_cmd(cmd.to_message())
+        save_data["CurrentProgramDataDump"] = str(rsp)
         rsp = CurrentProgramDataDump.from_message(rsp)
         print(rsp)
+        save_data["description"] = str(rsp)
 
         cmd = GlobalDataDumpRequest()
         rsp = self.write_cmd(cmd.to_message())
+        save_data["GlobalDataDumpRequest"] = str(rsp)
         rsp = GlobalDataDump.from_message(rsp)
+
+        json.dump(save_data, file)
 
 
 class NTS1Mk2(SDK2):
