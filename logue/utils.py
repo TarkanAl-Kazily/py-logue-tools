@@ -41,7 +41,7 @@ def host_to_midi(data: list[int]) -> list[int]:
     return result
 
 
-def midi_to_host(data: bytes) -> bytes:
+def midi_to_host(data: list[int]) -> list[int]:
     """
     Convert Kogs's midi 7-bit data format to host formatted 8-bit data
 

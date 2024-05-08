@@ -5,6 +5,7 @@ import json
 import logue
 import logue.target
 import mido
+import struct
 from logue.common import InquiryRequest, SearchDeviceRequest
 
 
@@ -662,18 +663,25 @@ class UserSlotStatus(SystemExclusiveMessage):
     |     :          |  :                                               |
     | 1111 0111 (F7) | EOX                        (see NOTE 1, TABLE 4) |
     +----------------+--------------------------------------------------+
+
+    NOTE: This is incorrect documentation.
+
+    1. A filled user slot will have the user module id, user slot id, A DUMMY BYTE, and variable
+    sized data, containing the unit_header struct info.
+    2. An empty user slot will just have the user module id and user slot id.
+
+    This also doesn't seem like it should ever be a transmitted message sent to the device...
     """
 
     ID = 0x49
-    HOST_PAYLOAD_SIZE = 32
-    MIDI_PAYLOAD_SIZE = 37
 
-    def __init__(self, module_id: int, slot_id: int, program_data: list[int]):
-        if len(program_data) != UserSlotStatus.HOST_PAYLOAD_SIZE:
-            raise logue.LogueError("Incorrect program_data size")
+    def __init__(self, module_id: int, slot_id: int, program_data: list[int] | None):
+        payload = [module_id, slot_id]
+        if program_data:
+            payload += [0] + logue.host_to_midi(program_data)
         super().__init__(
             id=UserSlotStatus.ID,
-            payload=[module_id, slot_id] + logue.host_to_midi(program_data),
+            payload=payload,
         )
         self.module_id = module_id
         self.slot_id = slot_id
@@ -685,14 +693,50 @@ class UserSlotStatus(SystemExclusiveMessage):
             raise logue.LogueError("Incorrect message id")
 
         payload = SystemExclusiveMessage.payload_from_message(message)
-        if len(payload) != 2 + UserSlotStatus.MIDI_PAYLOAD_SIZE:
-            raise logue.LogueError("Incorrect payload")
+        module_id = payload[0]
+        slot_id = payload[1]
+        if len(payload) > 2:
+            program_data = logue.midi_to_host(payload[3:])
+        # parse struct size from program_data to verify full message was received
+        header_size = struct.unpack("<I", bytes(program_data[:4]))
+        if len(header_size) != 1:
+            raise logue.LogueError("Error unpacking program_data")
+
+        header_size = header_size[0]
+        if len(program_data) < header_size:
+            raise logue.LogueError(
+                f"length of program_data is less than header_size ({len(program_data)} {header_size})"
+            )
 
         return UserSlotStatus(
             module_id=payload[0],
             slot_id=payload[1],
-            program_data=logue.midi_to_host(payload[2:]),
+            program_data=program_data,
         )
+
+    def __repr__(self):
+        """
+        program_data matches the following C-struct:
+
+        typedef struct unit_header {
+          uint32_t header_size;                      /** Size of the header. */
+          uint32_t target;                           /** Platform and module pair the unit is targeted for */
+          uint32_t api;                              /** API version for which the unit was built. See k_unit_api_* above. */
+          uint32_t dev_id;                           /** Developer ID. See https://github.com/korginc/logue-sdk/blob/master/developer_ids.md */
+          uint32_t unit_id;                          /** ID for this unit. Scoped within the context of a given dev_id. */
+          uint32_t version;                          /** The unit's version following the same major.minor.patch format and rules as the API version */
+          char     name[UNIT_NAME_SIZE];             /** Unit name. */
+          uint32_t reserved0;                        /** Reserved for future use. */
+          uint32_t reserved1;                        /** Reserved for future use. */
+          uint32_t num_params;                       /** Number of valid parameter descriptors. */
+          unit_param_t params[UNIT_MAX_PARAM_COUNT]; /** Parameter descriptors. */
+        } unit_header_t;
+        """
+        unit_header = struct.unpack(
+            "<6I20s3I", bytes(self.program_data[: 6 * 4 + 20 + 3 * 4])
+        )
+        result = f"{unit_header[6].decode('ascii')} - dev_id 0x{unit_header[3]:08x} unit_id 0x{unit_header[4]:08x} version 0x{unit_header[5]:08x}"
+        return result
 
 
 class UserSlotData(SystemExclusiveMessage):
@@ -869,6 +913,8 @@ class SDK2(logue.target.LogueTarget):
     can implement those functions here.
     """
 
+    MODULE_IDS = {"modfx": 1, "delfx": 2, "revfx": 3, "osc": 4}
+
     def __init__(self, ioport, channel=1):
         super().__init__(ioport=ioport, channel=channel)
 
@@ -923,6 +969,22 @@ class SDK2(logue.target.LogueTarget):
         if not isinstance(rsp, StatusOperationCompleted):
             print(f"An error occurred - {type(rsp)}")
             return
+
+    def download_program(self, module: str, slot: int, filename: str):
+        """
+        Download a user program to the device.
+
+        Args:
+            module: Type of the user program
+            slot: Slot to load the program into
+            filename: Filepath for the user program
+        """
+        module_id = SDK2.MODULE_IDS[module]
+        # Send a user slot status request to get the info about the slot
+        cmd = UserSlotStatusRequest(module_id, slot)
+        rsp = self.write_cmd(cmd.to_message())
+        rsp = UserSlotStatus.from_message(rsp)
+        print(f"{module} {slot} contains: {rsp}")
 
 
 class NTS1Mk2(SDK2):

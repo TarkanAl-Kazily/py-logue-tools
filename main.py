@@ -33,6 +33,18 @@ def parse_args():
         description="Load presets from a file",
     )
     load_parser.add_argument("--file", "-f", type=str, help="File to load from")
+    download_parser = subparsers.add_parser(
+        "download",
+        description="Download a program to a user slot",
+    )
+    download_parser.add_argument("--file", "-f", type=str, help="Module to download")
+    download_parser.add_argument(
+        "--module-type",
+        "-m",
+        choices=["osc", "modfx", "delfx", "revfx"],
+        help="Type of program",
+    )
+    download_parser.add_argument("--slot", "-s", type=int, help="Slot to load in")
 
     return parser.parse_args()
 
@@ -63,6 +75,9 @@ def main(args) -> int:
     if args.subcommand == "load":
         with open(args.file, "r") as f:
             target_instance.load_data(f)
+
+    if args.subcommand == "download":
+        target_instance.download_program(args.module_type, args.slot, args.file)
 
 
 if __name__ == "__main__":
