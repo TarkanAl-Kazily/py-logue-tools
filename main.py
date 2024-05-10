@@ -21,6 +21,11 @@ def parse_args():
         choices=logue.get_logue_target_types(),
         help="Device type to connect to",
     )
+    parser.add_argument(
+        "--full-inquiry",
+        action="store_true",
+        help="Query and print additional device info on startup",
+    )
 
     subparsers = parser.add_subparsers(title="subcommands", dest="subcommand")
     save_parser = subparsers.add_parser(
@@ -66,7 +71,7 @@ def main(args) -> int:
 
     target_instance = getattr(logue, args.type)(midi_ioport)
 
-    target_instance.inquiry()
+    target_instance.inquiry(full_inquiry=args.full_inquiry)
 
     if args.subcommand == "save":
         with open(args.file, "w") as f:

@@ -695,8 +695,14 @@ class UserSlotStatus(SystemExclusiveMessage):
         payload = SystemExclusiveMessage.payload_from_message(message)
         module_id = payload[0]
         slot_id = payload[1]
-        if len(payload) > 2:
-            program_data = logue.midi_to_host(payload[3:])
+        if len(payload) == 2:
+            return UserSlotStatus(
+                module_id=payload[0],
+                slot_id=payload[1],
+                program_data=None,
+            )
+
+        program_data = logue.midi_to_host(payload[3:])
         # parse struct size from program_data to verify full message was received
         header_size = struct.unpack("<I", bytes(program_data[:4]))
         if len(header_size) != 1:
@@ -732,10 +738,14 @@ class UserSlotStatus(SystemExclusiveMessage):
           unit_param_t params[UNIT_MAX_PARAM_COUNT]; /** Parameter descriptors. */
         } unit_header_t;
         """
+        result = f"{SDK2.MODULE_NAMES[self.module_id]} slot {self.slot_id} - "
+        if self.program_data is None:
+            return result + "EMPTY"
+
         unit_header = struct.unpack(
             "<6I20s3I", bytes(self.program_data[: 6 * 4 + 20 + 3 * 4])
         )
-        result = f"{unit_header[6].decode('ascii')} - dev_id 0x{unit_header[3]:08x} unit_id 0x{unit_header[4]:08x} version 0x{unit_header[5]:08x}"
+        result += f"{unit_header[6].decode('ascii')} - dev_id 0x{unit_header[3]:08x} unit_id 0x{unit_header[4]:08x} version 0x{unit_header[5]:08x}"
         return result
 
 
@@ -914,11 +924,13 @@ class SDK2(logue.target.LogueTarget):
     """
 
     MODULE_IDS = {"modfx": 1, "delfx": 2, "revfx": 3, "osc": 4}
+    MODULE_NAMES = {v: k for k, v in MODULE_IDS.items()}
+    MODULE_SLOTS = {"modfx": 16, "osc": 16, "delfx": 8, "revfx": 8}
 
     def __init__(self, ioport, channel=1):
         super().__init__(ioport=ioport, channel=channel)
 
-    def inquiry(self):
+    def inquiry(self, full_inquiry: bool = False):
         """
         From the NTS-1mkII_MIDIimp.txt:
         """
@@ -926,6 +938,12 @@ class SDK2(logue.target.LogueTarget):
         rsp = self.write_cmd(cmd.to_message())
         rsp = InquiryResponse.from_message(rsp)
         print(f"Device SDK version {rsp.major_ver}.{rsp.minor_ver}")
+
+        if full_inquiry:
+            # Query info for every slot
+            for mod_type, slots in SDK2.MODULE_SLOTS.items():
+                for i in range(slots):
+                    self.print_slot_status(mod_type, i)
 
     def search(self):
         cmd = SearchDeviceRequest(0x55)
@@ -979,12 +997,15 @@ class SDK2(logue.target.LogueTarget):
             slot: Slot to load the program into
             filename: Filepath for the user program
         """
+        self.print_slot_status(module, slot)
+
+    def print_slot_status(self, module: str, slot: int):
         module_id = SDK2.MODULE_IDS[module]
         # Send a user slot status request to get the info about the slot
         cmd = UserSlotStatusRequest(module_id, slot)
         rsp = self.write_cmd(cmd.to_message())
         rsp = UserSlotStatus.from_message(rsp)
-        print(f"{module} {slot} contains: {rsp}")
+        print(f"{rsp}")
 
 
 class NTS1Mk2(SDK2):
