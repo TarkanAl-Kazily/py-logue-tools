@@ -38,18 +38,18 @@ def parse_args():
         description="Load presets from a file",
     )
     load_parser.add_argument("--file", "-f", type=str, help="File to load from")
-    download_parser = subparsers.add_parser(
-        "download",
-        description="Download a program to a user slot",
+    install_parser = subparsers.add_parser(
+        "install",
+        description="Install a program to a user slot",
     )
-    download_parser.add_argument("--file", "-f", type=str, help="Module to download")
-    download_parser.add_argument(
+    install_parser.add_argument("--file", "-f", type=str, help="Module to install")
+    install_parser.add_argument(
         "--module-type",
         "-m",
         choices=["osc", "modfx", "delfx", "revfx"],
         help="Type of program",
     )
-    download_parser.add_argument("--slot", "-s", type=int, help="Slot to load in")
+    install_parser.add_argument("--slot", "-s", type=int, help="Slot to load in")
     fetch_parser = subparsers.add_parser(
         "fetch",
         description="Fetch a program from a user slot",
@@ -95,8 +95,8 @@ def main(args) -> int:
         with open(args.file, "r") as f:
             target_instance.load_data(f)
 
-    if args.subcommand == "download":
-        target_instance.download_program(args.module_type, args.slot, args.file)
+    if args.subcommand == "install":
+        target_instance.install_program(args.module_type, args.slot, args.file)
 
     if args.subcommand == "fetch":
         target_instance.fetch_program(args.module_type, args.slot, args.file)

@@ -6,6 +6,7 @@ import logue
 import logue.target
 import mido
 import struct
+import zlib
 from logue.common import InquiryRequest, SearchDeviceRequest
 
 
@@ -1050,9 +1051,9 @@ class SDK2(logue.target.LogueTarget):
             print(f"An error occurred - {type(rsp)}")
             return
 
-    def download_program(self, module: str, slot: int, filename: str):
+    def install_program(self, module: str, slot: int, filename: str):
         """
-        Download a user program to the device.
+        Install a user program to the device.
 
         Args:
             module: Type of the user program
@@ -1060,6 +1061,36 @@ class SDK2(logue.target.LogueTarget):
             filename: Filepath for the user program
         """
         self.print_slot_status(module, slot)
+        module_id = SDK2.MODULE_IDS[module]
+
+        # Load binary data
+        with open(filename, "rb") as f:
+            program = f.read()
+        header = list(struct.pack("<II", len(program), zlib.crc32(program)))
+        program_data = header + list(program)
+
+        sequence_max = int(len(program_data) / UserSlotData.MAX_HOST_DATA_SIZE)
+
+        cmds = []
+        # Form list of UserSlotData messages from the program data
+        for i in range(sequence_max + 1):
+            start = i * UserSlotData.MAX_HOST_DATA_SIZE
+            end = min(start + UserSlotData.MAX_HOST_DATA_SIZE, len(program_data))
+            cmd = UserSlotData(
+                module_id, slot, i, sequence_max, program_data[start:end]
+            )
+            cmds.append(cmd)
+
+        print(f"Sending program in {len(cmds)} messages")
+        for msg in cmds:
+            print(f"Sending msg {msg}")
+            rsp = self.write_cmd(msg.to_message())
+            rsp = SystemExclusiveMessage.from_message(rsp)
+            if not isinstance(rsp, StatusOperationCompleted):
+                print(f"An error occurred {rsp}")
+                return
+
+        print("Success")
 
     def fetch_program(self, module: str, slot: int, filename: str):
         """
