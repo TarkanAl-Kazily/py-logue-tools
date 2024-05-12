@@ -73,7 +73,7 @@ class LogueTarget:
         Returns:
             Next received message from the device.
         """
-        for _ in range(10):
+        for _ in range(100):
             response = self.port.receive(block=False)
             if response and response.type == "sysex":
                 return response

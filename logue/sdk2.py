@@ -6,6 +6,7 @@ import logue
 import logue.target
 import mido
 import struct
+import zlib
 from logue.common import InquiryRequest, SearchDeviceRequest
 
 
@@ -840,7 +841,7 @@ class UserSlotData(SystemExclusiveMessage):
             result += "EMPTY"
             return result
 
-        result += f"packet {self.sequence_num} (out of {self.sequence_max}) contains {len(self.program_data)} bytes"
+        result += f"packet {self.sequence_num} (out of {self.sequence_max + 1}) contains {len(self.program_data)} bytes"
         return result
 
 
@@ -1065,17 +1066,14 @@ class SDK2(logue.target.LogueTarget):
         # Load binary data
         with open(filename, "rb") as f:
             program = f.read()
-        header = list(struct.pack("<I", len(program))) + [0, 0, 0, 0]
+        header = list(struct.pack("<II", len(program), zlib.crc32(program)))
         program_data = header + list(program)
 
-        sequence_max = int(
-            (len(program_data) + UserSlotData.MAX_HOST_DATA_SIZE - 1)
-            / UserSlotData.MAX_HOST_DATA_SIZE
-        )
+        sequence_max = int(len(program_data) / UserSlotData.MAX_HOST_DATA_SIZE)
 
         cmds = []
         # Form list of UserSlotData messages from the program data
-        for i in range(sequence_max):
+        for i in range(sequence_max + 1):
             start = i * UserSlotData.MAX_HOST_DATA_SIZE
             end = min(start + UserSlotData.MAX_HOST_DATA_SIZE, len(program_data))
             cmd = UserSlotData(
@@ -1086,11 +1084,13 @@ class SDK2(logue.target.LogueTarget):
         print(f"Sending program in {len(cmds)} messages")
         for msg in cmds:
             print(f"Sending msg {msg}")
-            self.write(msg)
+            rsp = self.write_cmd(msg.to_message())
+            rsp = SystemExclusiveMessage.from_message(rsp)
+            if not isinstance(rsp, StatusOperationCompleted):
+                print(f"An error occurred {rsp}")
+                return
 
-        rsp = self.receive()
-        rsp = UserSlotStatus.from_message(rsp)
-        print(f"{rsp}")
+        print("Success")
 
     def fetch_program(self, module: str, slot: int, filename: str):
         """
