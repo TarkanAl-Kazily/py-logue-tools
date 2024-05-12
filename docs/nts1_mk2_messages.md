@@ -77,3 +77,56 @@ All begin with common header, followed by id value, followed by message specific
 * (14) USER SLOT STATUS
 * (15) USER SLOT DATA
 * (16) STATUS (ACK/NAK)
+
+
+---
+
+# (15) USER SLOT DATA                                              R/T
+From the docs:
+```
++----------------+--------------------------------------------------+
+|     Byte       |             Description                          |
++----------------+--------------------------------------------------+
+| F0,42,3g,      | EXCLUSIVE HEADER                                 |
+|    00,01,73    |                                                  |
+| 0100 1010 (4A) | USER SLOT DATA                         4AH       |
+| 0ddd dddd (dd) | Data1                                            |
+| 0ddd dddd (dd) | Data2                                            |
+| 0ddd dddd (dd) |  :         Data Size         Conv. Size          |
+| 0ddd dddd (dd) |  :     Variable (7bit) -> Variable (8bit)        |
+|     :          |  :                                               |
+| 1111 0111 (F7) | EOX                        (see NOTE 1, TABLE 5) |
++----------------+--------------------------------------------------+
+
+ When this message is received, the data is saved to the specified
+ module's slot, then then STATUS is transmitted (see NOTE 2).
+
+ This message is transmitted after USER SLOT DATA REQUEST is received.
+```
+
+Believe it or not, this is not complete documentation.
+
+Better documentation follows:
+```
++----------------+--------------------------------------------------+
+|     Byte       |             Description                          |
++----------------+--------------------------------------------------+
+| F0,42,3g,      | EXCLUSIVE HEADER                                 |
+|    00,01,73    |                                                  |
+| 0100 1010 (4A) | USER SLOT DATA                         4AH       |
+| 0ddd dddd (dd) | MODULE ID                                        |
+| 0ddd dddd (dd) | SLOT NUMBER                                      |
+| 0ddd dddd (dd) | SEQUENCE NUM                                     |
+| 0000 0001 (01) | ? MAX SEQUENCE NUM ? <ONE IN EXPERIMENTS>        |
+| 0ddd dddd (dd) |  :         Data Size         Conv. Size          |
+| 0ddd dddd (dd) |  :     Variable (7bit) -> Variable (8bit)        |
+|     :          |  :                                               |
+| 1111 0111 (F7) | EOX                        (see NOTE 1, TABLE 5) |
++----------------+--------------------------------------------------+
+
+THE TOTAL MESSAGE SIZE CANNOT EXCEET 4096 BYTES.
+
+If the user data is too large, the message will be split over multiple packets.
+
+Message contents are the contents of the .unit file directly (the ELF).
+```
