@@ -38,4 +38,5 @@ devices.
 
 * `save` will save active settings or presets to a file.
 * `load` will restore settings or presets from a file.
-* `download` will install a user module to a slot.
+* `install` will install a user module to a slot.
+* `fetch` will retrieve a user module program from a slot.
