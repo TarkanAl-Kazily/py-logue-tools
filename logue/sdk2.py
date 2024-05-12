@@ -1104,6 +1104,7 @@ class SDK2(logue.target.LogueTarget):
         self.print_slot_status(module, slot)
 
         module_id = SDK2.MODULE_IDS[module]
+        # Request first UserSlotData packet
         cmd = UserSlotDataRequest(module_id, slot)
         rsp = self.write_cmd(cmd.to_message())
         rsp = UserSlotData.from_message(rsp)
@@ -1111,7 +1112,8 @@ class SDK2(logue.target.LogueTarget):
 
         program = [] + rsp.program_data
 
-        for i in range(0, rsp.sequence_max):
+        # Request remaining UserSlotData (rsp.sequence_max - 1) total packets
+        for i in range(rsp.sequence_max):
             rsp = self.receive()
             rsp = UserSlotData.from_message(rsp)
             print(rsp)
