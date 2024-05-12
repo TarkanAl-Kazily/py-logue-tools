@@ -773,7 +773,7 @@ class UserSlotData(SystemExclusiveMessage):
 
     ID = 0x4A
     MAX_MSG_SIZE = 4096
-    MAX_MIDI_DATA_SIZE = 4096 - 12
+    MAX_MIDI_DATA_SIZE = MAX_MSG_SIZE - 12
     MAX_HOST_DATA_SIZE = 3573
 
     def __init__(
@@ -785,7 +785,7 @@ class UserSlotData(SystemExclusiveMessage):
         program_data: list[int] | None,
     ):
         payload = [module_id, slot_id]
-        if sequence_num:
+        if sequence_num is not None:
             self.has_program = True
             payload += [sequence_num, sequence_max]
         else:
@@ -833,6 +833,15 @@ class UserSlotData(SystemExclusiveMessage):
             sequence_max=sequence_max,
             program_data=program_data,
         )
+
+    def __repr__(self):
+        result = f"{SDK2.MODULE_NAMES[self.module_id]} slot {self.slot_id} - "
+        if not self.has_program:
+            result += "EMPTY"
+            return result
+
+        result += f"packet {self.sequence_num} (out of {self.sequence_max}) contains {len(self.program_data)} bytes"
+        return result
 
 
 class StatusOperationCompleted(SystemExclusiveMessage):
@@ -1052,6 +1061,39 @@ class SDK2(logue.target.LogueTarget):
         """
         self.print_slot_status(module, slot)
 
+    def fetch_program(self, module: str, slot: int, filename: str):
+        """
+        Receive a user program from the device.
+
+        Args:
+            module: Type of the user program
+            slot: Slot to fetch the program from
+            filename: Filepath to write the user program
+        """
+        self.print_slot_status(module, slot)
+
+        module_id = SDK2.MODULE_IDS[module]
+        cmd = UserSlotDataRequest(module_id, slot)
+        rsp = self.write_cmd(cmd.to_message())
+        rsp = UserSlotData.from_message(rsp)
+        print(rsp)
+
+        program = [] + rsp.program_data
+
+        for i in range(0, rsp.sequence_max):
+            rsp = self.receive()
+            rsp = UserSlotData.from_message(rsp)
+            print(rsp)
+            program += rsp.program_data
+
+        expected_len = struct.unpack("<I", bytes(program[:4]))[0]
+        print(
+            f"Fetched program with expected length {expected_len} - actual length {len(program[8:])}"
+        )
+
+        with open(filename, "wb") as f:
+            f.write(bytes(program[8:]))
+
     def print_slot_status(self, module: str, slot: int):
         module_id = SDK2.MODULE_IDS[module]
         # Send a user slot status request to get the info about the slot
@@ -1068,3 +1110,4 @@ class NTS1Mk2(SDK2):
 
     def __init__(self, ioport, channel=1):
         super().__init__(ioport=ioport, channel=1)
+        self.port.input._rt.ignore_types(False, True, True)
