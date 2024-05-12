@@ -50,6 +50,20 @@ def parse_args():
         help="Type of program",
     )
     download_parser.add_argument("--slot", "-s", type=int, help="Slot to load in")
+    fetch_parser = subparsers.add_parser(
+        "fetch",
+        description="Fetch a program from a user slot",
+    )
+    fetch_parser.add_argument(
+        "--file", "-f", type=str, help="Where to save the module to"
+    )
+    fetch_parser.add_argument(
+        "--module-type",
+        "-m",
+        choices=["osc", "modfx", "delfx", "revfx"],
+        help="Type of program",
+    )
+    fetch_parser.add_argument("--slot", "-s", type=int, help="Slot to fetch from")
 
     return parser.parse_args()
 
@@ -83,6 +97,9 @@ def main(args) -> int:
 
     if args.subcommand == "download":
         target_instance.download_program(args.module_type, args.slot, args.file)
+
+    if args.subcommand == "fetch":
+        target_instance.fetch_program(args.module_type, args.slot, args.file)
 
 
 if __name__ == "__main__":

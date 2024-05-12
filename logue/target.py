@@ -42,16 +42,28 @@ class LogueTarget:
     def write_cmd(self, command: mido.Message) -> mido.Message:
         """
         Write a message and wait for its response from the target.
-        Blocks.
+        Raises an exception if no response is received quickly.
 
         Args:
             command: command to write on the port
 
         Returns:
-            Received message from the device.
+            Next received message from the device.
         """
         self.port.send(command)
 
+        return self.receive()
+
+    def receive(self) -> mido.Message:
+        """
+        Receive the next sysex message from the device.
+
+        Raises:
+            LogueError: When a message is not received within a short time interval.
+
+        Returns:
+            Next received message from the device.
+        """
         for _ in range(10):
             response = self.port.receive(block=False)
             if response and response.type == "sysex":
