@@ -841,7 +841,7 @@ class UserSlotData(SystemExclusiveMessage):
             result += "EMPTY"
             return result
 
-        result += f"packet {self.sequence_num} (out of {self.sequence_max + 1}) contains {len(self.program_data)} bytes"
+        result += f"packet {self.sequence_num} (out of {self.sequence_max}) contains {len(self.program_data)} bytes"
         return result
 
 
