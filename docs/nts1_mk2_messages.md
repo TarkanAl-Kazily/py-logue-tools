@@ -124,9 +124,9 @@ Better documentation follows:
 | 1111 0111 (F7) | EOX                        (see NOTE 1, TABLE 5) |
 +----------------+--------------------------------------------------+
 
-THE TOTAL MESSAGE SIZE CANNOT EXCEET 4096 BYTES.
+THE TOTAL MESSAGE SIZE CANNOT EXCEED 4096 BYTES.
 
 If the user data is too large, the message will be split over multiple packets.
 
-Message contents are the contents of the .unit file directly (the ELF).
+Message contents are the total unit file length (4 bytes), then 0 (4 bytes), then the contents of the .unit file directly (the ELF).
 ```

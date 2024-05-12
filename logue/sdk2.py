@@ -758,19 +758,57 @@ class UserSlotData(SystemExclusiveMessage):
     | F0,42,3g,      | EXCLUSIVE HEADER                                 |
     |    00,01,73    |                                                  |
     | 0100 1010 (4A) | USER SLOT DATA                         4AH       |
-    | 0ddd dddd (dd) | Data1                                            |
-    | 0ddd dddd (dd) | Data2                                            |
+    | 0ddd dddd (dd) | MODULE ID                                        |
+    | 0ddd dddd (dd) | SLOT NUMBER                                      |
+    | 0ddd dddd (dd) | SEQUENCE NUM                                     |
+    | 0000 0001 (01) | ? MAX SEQUENCE NUM ? <ONE IN EXPERIMENTS>        |
     | 0ddd dddd (dd) |  :         Data Size         Conv. Size          |
     | 0ddd dddd (dd) |  :     Variable (7bit) -> Variable (8bit)        |
     |     :          |  :                                               |
     | 1111 0111 (F7) | EOX                        (see NOTE 1, TABLE 5) |
     +----------------+--------------------------------------------------+
+
+    THE TOTAL MESSAGE SIZE (from F0 to F7 inclusive) CANNOT EXCEED 4096 BYTES.
     """
 
     ID = 0x4A
+    MAX_MSG_SIZE = 4096
+    MAX_MIDI_DATA_SIZE = MAX_MSG_SIZE - 12
+    MAX_HOST_DATA_SIZE = 3573
 
-    def __init__(self, program_data: list[int]):
-        super().__init__(id=UserSlotData.ID, payload=logue.host_to_midi(program_data))
+    def __init__(
+        self,
+        module_id: int,
+        slot_id: int,
+        sequence_num: int | None,
+        sequence_max: int | None,
+        program_data: list[int] | None,
+    ):
+        payload = [module_id, slot_id]
+        if sequence_num is not None:
+            self.has_program = True
+            payload += [sequence_num, sequence_max]
+        else:
+            self.has_program = False
+
+        if self.has_program:
+            if len(program_data) > UserSlotData.MAX_HOST_DATA_SIZE:
+                raise logue.LogueError(
+                    f"Program data is too long for a single UserSlotData message {len(program_data)}"
+                )
+            payload += logue.host_to_midi(program_data)
+
+        super().__init__(id=UserSlotData.ID, payload=payload)
+
+        if len(self.data) + 2 > UserSlotData.MAX_MSG_SIZE:
+            raise logue.LogueError(
+                f"Final message size is too large for a single UserSlotData message {len(self.data) + 2}"
+            )
+
+        self.module_id = module_id
+        self.slot_id = slot_id
+        self.sequence_num = sequence_num
+        self.sequence_max = sequence_max
         self.program_data = program_data
 
     @classmethod
@@ -779,7 +817,31 @@ class UserSlotData(SystemExclusiveMessage):
             raise logue.LogueError("Incorrect message id")
 
         payload = SystemExclusiveMessage.payload_from_message(message)
-        return UserSlotData(program_data=logue.midi_to_host(payload))
+        module_id = payload[0]
+        slot_id = payload[1]
+        sequence_num = None
+        sequence_max = None
+        program_data = None
+        if len(payload) > 2:
+            sequence_num = payload[2]
+            sequence_max = payload[3]
+            program_data = logue.midi_to_host(payload[4:])
+        return UserSlotData(
+            module_id=module_id,
+            slot_id=slot_id,
+            sequence_num=sequence_num,
+            sequence_max=sequence_max,
+            program_data=program_data,
+        )
+
+    def __repr__(self):
+        result = f"{SDK2.MODULE_NAMES[self.module_id]} slot {self.slot_id} - "
+        if not self.has_program:
+            result += "EMPTY"
+            return result
+
+        result += f"packet {self.sequence_num} (out of {self.sequence_max}) contains {len(self.program_data)} bytes"
+        return result
 
 
 class StatusOperationCompleted(SystemExclusiveMessage):
@@ -999,6 +1061,39 @@ class SDK2(logue.target.LogueTarget):
         """
         self.print_slot_status(module, slot)
 
+    def fetch_program(self, module: str, slot: int, filename: str):
+        """
+        Receive a user program from the device.
+
+        Args:
+            module: Type of the user program
+            slot: Slot to fetch the program from
+            filename: Filepath to write the user program
+        """
+        self.print_slot_status(module, slot)
+
+        module_id = SDK2.MODULE_IDS[module]
+        cmd = UserSlotDataRequest(module_id, slot)
+        rsp = self.write_cmd(cmd.to_message())
+        rsp = UserSlotData.from_message(rsp)
+        print(rsp)
+
+        program = [] + rsp.program_data
+
+        for i in range(0, rsp.sequence_max):
+            rsp = self.receive()
+            rsp = UserSlotData.from_message(rsp)
+            print(rsp)
+            program += rsp.program_data
+
+        expected_len = struct.unpack("<I", bytes(program[:4]))[0]
+        print(
+            f"Fetched program with expected length {expected_len} - actual length {len(program[8:])}"
+        )
+
+        with open(filename, "wb") as f:
+            f.write(bytes(program[8:]))
+
     def print_slot_status(self, module: str, slot: int):
         module_id = SDK2.MODULE_IDS[module]
         # Send a user slot status request to get the info about the slot
@@ -1015,3 +1110,6 @@ class NTS1Mk2(SDK2):
 
     def __init__(self, ioport, channel=1):
         super().__init__(ioport=ioport, channel=1)
+        # TODO: This is a workaround because rtmidi will hand mido incomplete packets whenever it
+        # parses a clock byte in the middle of a sysex transfer from the NTS1 Mk2.
+        self.port.input._rt.ignore_types(False, True, True)
