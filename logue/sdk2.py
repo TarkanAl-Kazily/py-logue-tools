@@ -817,7 +817,22 @@ class UserSlotData(SystemExclusiveMessage):
             raise logue.LogueError("Incorrect message id")
 
         payload = SystemExclusiveMessage.payload_from_message(message)
-        return UserSlotData(program_data=logue.midi_to_host(payload))
+        module_id = payload[0]
+        slot_id = payload[1]
+        sequence_num = None
+        sequence_max = None
+        program_data = None
+        if len(payload) > 2:
+            sequence_num = payload[2]
+            sequence_max = payload[3]
+            program_data = logue.midi_to_host(payload[4:])
+        return UserSlotData(
+            module_id=module_id,
+            slot_id=slot_id,
+            sequence_num=sequence_num,
+            sequence_max=sequence_max,
+            program_data=program_data,
+        )
 
 
 class StatusOperationCompleted(SystemExclusiveMessage):
