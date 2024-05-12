@@ -128,5 +128,5 @@ THE TOTAL MESSAGE SIZE CANNOT EXCEED 4096 BYTES.
 
 If the user data is too large, the message will be split over multiple packets.
 
-Message contents are the contents of the .unit file directly (the ELF).
+Message contents are the total unit file length (4 bytes), then 0 (4 bytes), then the contents of the .unit file directly (the ELF).
 ```
