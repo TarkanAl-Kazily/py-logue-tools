@@ -1104,6 +1104,7 @@ class SDK2(logue.target.LogueTarget):
         self.print_slot_status(module, slot)
 
         module_id = SDK2.MODULE_IDS[module]
+        # Request first UserSlotData packet
         cmd = UserSlotDataRequest(module_id, slot)
         rsp = self.write_cmd(cmd.to_message())
         rsp = UserSlotData.from_message(rsp)
@@ -1111,7 +1112,8 @@ class SDK2(logue.target.LogueTarget):
 
         program = [] + rsp.program_data
 
-        for i in range(0, rsp.sequence_max):
+        # Request remaining UserSlotData (rsp.sequence_max - 1) total packets
+        for i in range(rsp.sequence_max):
             rsp = self.receive()
             rsp = UserSlotData.from_message(rsp)
             print(rsp)
@@ -1124,6 +1126,26 @@ class SDK2(logue.target.LogueTarget):
 
         with open(filename, "wb") as f:
             f.write(bytes(program[8:]))
+
+    def clear_program(self, module: str, slot: int):
+        """
+        Clear a user program from the device.
+
+        Args:
+            module: Type of the user program
+            slot: Slot to clear the program from
+        """
+        self.print_slot_status(module, slot)
+
+        module_id = SDK2.MODULE_IDS[module]
+        cmd = ClearUserSlot(module_id, slot)
+        rsp = self.write_cmd(cmd.to_message())
+        rsp = SystemExclusiveMessage.from_message(rsp)
+        if not isinstance(rsp, StatusOperationCompleted):
+            print(f"An error occurred {rsp}")
+            return
+
+        print("Success")
 
     def print_slot_status(self, module: str, slot: int):
         module_id = SDK2.MODULE_IDS[module]

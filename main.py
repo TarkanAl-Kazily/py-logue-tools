@@ -64,6 +64,17 @@ def parse_args():
         help="Type of program",
     )
     fetch_parser.add_argument("--slot", "-s", type=int, help="Slot to fetch from")
+    clear_parser = subparsers.add_parser(
+        "clear",
+        description="Clear a user slot",
+    )
+    clear_parser.add_argument(
+        "--module-type",
+        "-m",
+        choices=["osc", "modfx", "delfx", "revfx"],
+        help="Type of program",
+    )
+    clear_parser.add_argument("--slot", "-s", type=int, help="Slot to clear")
 
     return parser.parse_args()
 
@@ -100,6 +111,11 @@ def main(args) -> int:
 
     if args.subcommand == "fetch":
         target_instance.fetch_program(args.module_type, args.slot, args.file)
+
+    if args.subcommand == "clear":
+        target_instance.clear_program(args.module_type, args.slot)
+
+    return 0
 
 
 if __name__ == "__main__":
