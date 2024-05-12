@@ -1110,4 +1110,6 @@ class NTS1Mk2(SDK2):
 
     def __init__(self, ioport, channel=1):
         super().__init__(ioport=ioport, channel=1)
+        # TODO: This is a workaround because rtmidi will hand mido incomplete packets whenever it
+        # parses a clock byte in the middle of a sysex transfer from the NTS1 Mk2.
         self.port.input._rt.ignore_types(False, True, True)
