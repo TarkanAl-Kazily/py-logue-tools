@@ -50,9 +50,18 @@ class LogueTarget:
         Returns:
             Next received message from the device.
         """
-        self.port.send(command)
+        self.write(command)
 
         return self.receive()
+
+    def write(self, command: mido.Message):
+        """
+        Write a message.
+
+        Args:
+            command: command to write on the port
+        """
+        self.port.send(command)
 
     def receive(self) -> mido.Message:
         """

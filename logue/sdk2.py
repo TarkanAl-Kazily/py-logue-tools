@@ -1050,9 +1050,9 @@ class SDK2(logue.target.LogueTarget):
             print(f"An error occurred - {type(rsp)}")
             return
 
-    def download_program(self, module: str, slot: int, filename: str):
+    def install_program(self, module: str, slot: int, filename: str):
         """
-        Download a user program to the device.
+        Install a user program to the device.
 
         Args:
             module: Type of the user program
@@ -1060,6 +1060,37 @@ class SDK2(logue.target.LogueTarget):
             filename: Filepath for the user program
         """
         self.print_slot_status(module, slot)
+        module_id = SDK2.MODULE_IDS[module]
+
+        # Load binary data
+        with open(filename, "rb") as f:
+            program = f.read()
+        header = list(struct.pack("<I", len(program))) + [0, 0, 0, 0]
+        program_data = header + list(program)
+
+        sequence_max = int(
+            (len(program_data) + UserSlotData.MAX_HOST_DATA_SIZE - 1)
+            / UserSlotData.MAX_HOST_DATA_SIZE
+        )
+
+        cmds = []
+        # Form list of UserSlotData messages from the program data
+        for i in range(sequence_max):
+            start = i * UserSlotData.MAX_HOST_DATA_SIZE
+            end = min(start + UserSlotData.MAX_HOST_DATA_SIZE, len(program_data))
+            cmd = UserSlotData(
+                module_id, slot, i, sequence_max, program_data[start:end]
+            )
+            cmds.append(cmd)
+
+        print(f"Sending program in {len(cmds)} messages")
+        for msg in cmds:
+            print(f"Sending msg {msg}")
+            self.write(msg)
+
+        rsp = self.receive()
+        rsp = UserSlotStatus.from_message(rsp)
+        print(f"{rsp}")
 
     def fetch_program(self, module: str, slot: int, filename: str):
         """
