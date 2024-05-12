@@ -124,7 +124,7 @@ Better documentation follows:
 | 1111 0111 (F7) | EOX                        (see NOTE 1, TABLE 5) |
 +----------------+--------------------------------------------------+
 
-THE TOTAL MESSAGE SIZE CANNOT EXCEET 4096 BYTES.
+THE TOTAL MESSAGE SIZE CANNOT EXCEED 4096 BYTES.
 
 If the user data is too large, the message will be split over multiple packets.
 

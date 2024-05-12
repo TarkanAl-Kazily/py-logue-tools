@@ -758,19 +758,57 @@ class UserSlotData(SystemExclusiveMessage):
     | F0,42,3g,      | EXCLUSIVE HEADER                                 |
     |    00,01,73    |                                                  |
     | 0100 1010 (4A) | USER SLOT DATA                         4AH       |
-    | 0ddd dddd (dd) | Data1                                            |
-    | 0ddd dddd (dd) | Data2                                            |
+    | 0ddd dddd (dd) | MODULE ID                                        |
+    | 0ddd dddd (dd) | SLOT NUMBER                                      |
+    | 0ddd dddd (dd) | SEQUENCE NUM                                     |
+    | 0000 0001 (01) | ? MAX SEQUENCE NUM ? <ONE IN EXPERIMENTS>        |
     | 0ddd dddd (dd) |  :         Data Size         Conv. Size          |
     | 0ddd dddd (dd) |  :     Variable (7bit) -> Variable (8bit)        |
     |     :          |  :                                               |
     | 1111 0111 (F7) | EOX                        (see NOTE 1, TABLE 5) |
     +----------------+--------------------------------------------------+
+
+    THE TOTAL MESSAGE SIZE (from F0 to F7 inclusive) CANNOT EXCEED 4096 BYTES.
     """
 
     ID = 0x4A
+    MAX_MSG_SIZE = 4096
+    MAX_MIDI_DATA_SIZE = 4096 - 12
+    MAX_HOST_DATA_SIZE = 3573
 
-    def __init__(self, program_data: list[int]):
-        super().__init__(id=UserSlotData.ID, payload=logue.host_to_midi(program_data))
+    def __init__(
+        self,
+        module_id: int,
+        slot_id: int,
+        sequence_num: int | None,
+        sequence_max: int | None,
+        program_data: list[int] | None,
+    ):
+        payload = [module_id, slot_id]
+        if sequence_num:
+            self.has_program = True
+            payload += [sequence_num, sequence_max]
+        else:
+            self.has_program = False
+
+        if self.has_program:
+            if len(program_data) > UserSlotData.MAX_HOST_DATA_SIZE:
+                raise logue.LogueError(
+                    f"Program data is too long for a single UserSlotData message {len(program_data)}"
+                )
+            payload += logue.host_to_midi(program_data)
+
+        super().__init__(id=UserSlotData.ID, payload=payload)
+
+        if len(self.data) + 2 > UserSlotData.MAX_MSG_SIZE:
+            raise logue.LogueError(
+                f"Final message size is too large for a single UserSlotData message {len(self.data) + 2}"
+            )
+
+        self.module_id = module_id
+        self.slot_id = slot_id
+        self.sequence_num = sequence_num
+        self.sequence_max = sequence_max
         self.program_data = program_data
 
     @classmethod
