@@ -2,6 +2,7 @@
 
 import mido.ports
 import time
+import typing
 
 
 class LogueError(Exception):
