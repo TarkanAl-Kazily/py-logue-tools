@@ -32,38 +32,58 @@ def parse_args():
         "save",
         description="Save presets to a file",
     )
-    save_parser.add_argument("--file", "-f", type=str, help="File to save to")
+    save_parser.add_argument(
+        "--file", "-f", type=str, help="File to save to", required=True
+    )
     load_parser = subparsers.add_parser(
         "load",
         description="Load presets from a file",
     )
-    load_parser.add_argument("--file", "-f", type=str, help="File to load from")
+    load_parser.add_argument(
+        "--file", "-f", type=str, help="File to load from", required=True
+    )
     install_parser = subparsers.add_parser(
         "install",
         description="Install a program to a user slot",
     )
-    install_parser.add_argument("--file", "-f", type=str, help="Module to install")
+    install_parser.add_argument(
+        "--file", "-f", type=str, help="Module to install", required=True
+    )
     install_parser.add_argument(
         "--module-type",
         "-m",
         choices=["osc", "modfx", "delfx", "revfx"],
         help="Type of program",
+        required=True,
     )
-    install_parser.add_argument("--slot", "-s", type=int, help="Slot to load in")
+    install_parser.add_argument(
+        "--slot", "-s", type=int, help="Slot to load in", required=True
+    )
     fetch_parser = subparsers.add_parser(
         "fetch",
         description="Fetch a program from a user slot",
     )
     fetch_parser.add_argument(
-        "--file", "-f", type=str, help="Where to save the module to"
+        "--file",
+        "-f",
+        type=str,
+        help="Where to save the module to",
+        required=True,
     )
     fetch_parser.add_argument(
         "--module-type",
         "-m",
         choices=["osc", "modfx", "delfx", "revfx"],
         help="Type of program",
+        required=True,
     )
-    fetch_parser.add_argument("--slot", "-s", type=int, help="Slot to fetch from")
+    fetch_parser.add_argument(
+        "--slot",
+        "-s",
+        type=int,
+        help="Slot to fetch from",
+        required=True,
+    )
     clear_parser = subparsers.add_parser(
         "clear",
         description="Clear a user slot",
@@ -73,8 +93,11 @@ def parse_args():
         "-m",
         choices=["osc", "modfx", "delfx", "revfx"],
         help="Type of program",
+        required=True,
     )
-    clear_parser.add_argument("--slot", "-s", type=int, help="Slot to clear")
+    clear_parser.add_argument(
+        "--slot", "-s", type=int, help="Slot to clear", required=True
+    )
 
     return parser.parse_args()
 
