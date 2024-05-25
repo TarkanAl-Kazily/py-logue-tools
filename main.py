@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python
 # Copyright 2024 Tarkan Al-Kazily
 
 import argparse
@@ -32,38 +32,58 @@ def parse_args():
         "save",
         description="Save presets to a file",
     )
-    save_parser.add_argument("--file", "-f", type=str, help="File to save to")
+    save_parser.add_argument(
+        "--file", "-f", type=str, help="File to save to", required=True
+    )
     load_parser = subparsers.add_parser(
         "load",
         description="Load presets from a file",
     )
-    load_parser.add_argument("--file", "-f", type=str, help="File to load from")
+    load_parser.add_argument(
+        "--file", "-f", type=str, help="File to load from", required=True
+    )
     install_parser = subparsers.add_parser(
         "install",
         description="Install a program to a user slot",
     )
-    install_parser.add_argument("--file", "-f", type=str, help="Module to install")
+    install_parser.add_argument(
+        "--file", "-f", type=str, help="Module to install", required=True
+    )
     install_parser.add_argument(
         "--module-type",
         "-m",
         choices=["osc", "modfx", "delfx", "revfx"],
         help="Type of program",
+        required=True,
     )
-    install_parser.add_argument("--slot", "-s", type=int, help="Slot to load in")
+    install_parser.add_argument(
+        "--slot", "-s", type=int, help="Slot to load in", required=True
+    )
     fetch_parser = subparsers.add_parser(
         "fetch",
         description="Fetch a program from a user slot",
     )
     fetch_parser.add_argument(
-        "--file", "-f", type=str, help="Where to save the module to"
+        "--file",
+        "-f",
+        type=str,
+        help="Where to save the module to",
+        required=True,
     )
     fetch_parser.add_argument(
         "--module-type",
         "-m",
         choices=["osc", "modfx", "delfx", "revfx"],
         help="Type of program",
+        required=True,
     )
-    fetch_parser.add_argument("--slot", "-s", type=int, help="Slot to fetch from")
+    fetch_parser.add_argument(
+        "--slot",
+        "-s",
+        type=int,
+        help="Slot to fetch from",
+        required=True,
+    )
     clear_parser = subparsers.add_parser(
         "clear",
         description="Clear a user slot",
@@ -73,8 +93,11 @@ def parse_args():
         "-m",
         choices=["osc", "modfx", "delfx", "revfx"],
         help="Type of program",
+        required=True,
     )
-    clear_parser.add_argument("--slot", "-s", type=int, help="Slot to clear")
+    clear_parser.add_argument(
+        "--slot", "-s", type=int, help="Slot to clear", required=True
+    )
 
     return parser.parse_args()
 
@@ -96,26 +119,29 @@ def main(args) -> int:
 
     target_instance = getattr(logue, args.type)(midi_ioport)
 
-    target_instance.inquiry(full_inquiry=args.full_inquiry)
+    ret = target_instance.inquiry(full_inquiry=args.full_inquiry)
+    if not ret:
+        print("Inquiry failed")
+        return -1
 
     if args.subcommand == "save":
         with open(args.file, "w") as f:
-            target_instance.save_data(f)
+            ret = target_instance.save_data(f)
 
     if args.subcommand == "load":
         with open(args.file, "r") as f:
-            target_instance.load_data(f)
+            ret = target_instance.load_data(f)
 
     if args.subcommand == "install":
-        target_instance.install_program(args.module_type, args.slot, args.file)
+        ret = target_instance.install_program(args.module_type, args.slot, args.file)
 
     if args.subcommand == "fetch":
-        target_instance.fetch_program(args.module_type, args.slot, args.file)
+        ret = target_instance.fetch_program(args.module_type, args.slot, args.file)
 
     if args.subcommand == "clear":
-        target_instance.clear_program(args.module_type, args.slot)
+        ret = target_instance.clear_program(args.module_type, args.slot)
 
-    return 0
+    return 0 if ret else -1
 
 
 if __name__ == "__main__":
