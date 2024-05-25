@@ -96,26 +96,29 @@ def main(args) -> int:
 
     target_instance = getattr(logue, args.type)(midi_ioport)
 
-    target_instance.inquiry(full_inquiry=args.full_inquiry)
+    ret = target_instance.inquiry(full_inquiry=args.full_inquiry)
+    if not ret:
+        print("Inquiry failed")
+        return -1
 
     if args.subcommand == "save":
         with open(args.file, "w") as f:
-            target_instance.save_data(f)
+            ret = target_instance.save_data(f)
 
     if args.subcommand == "load":
         with open(args.file, "r") as f:
-            target_instance.load_data(f)
+            ret = target_instance.load_data(f)
 
     if args.subcommand == "install":
-        target_instance.install_program(args.module_type, args.slot, args.file)
+        ret = target_instance.install_program(args.module_type, args.slot, args.file)
 
     if args.subcommand == "fetch":
-        target_instance.fetch_program(args.module_type, args.slot, args.file)
+        ret = target_instance.fetch_program(args.module_type, args.slot, args.file)
 
     if args.subcommand == "clear":
-        target_instance.clear_program(args.module_type, args.slot)
+        ret = target_instance.clear_program(args.module_type, args.slot)
 
-    return 0
+    return 0 if ret else -1
 
 
 if __name__ == "__main__":
