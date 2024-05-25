@@ -1,7 +1,6 @@
 # Copyright 2024 Tarkan Al-Kazily
 
 import mido.ports
-import mido.midifiles.meta
 import time
 
 
@@ -34,6 +33,9 @@ class LogueTarget:
         port: Bi-directional MIDI port for communicating with target
         channel: MIDI channel [1-16] for the target
     """
+
+    RETRIES = 100
+    DELAY_S = 0.01
 
     def __init__(self, ioport: mido.ports.IOPort, channel: int = 1):
         self.port = ioport
@@ -73,22 +75,31 @@ class LogueTarget:
         Returns:
             Next received message from the device.
         """
-        for _ in range(100):
+        for _ in range(LogueTarget.RETRIES):
             response = self.port.receive(block=False)
             if response and response.type == "sysex":
                 return response
-            time.sleep(0.01)
+            time.sleep(LogueTarget.DELAY_S)
 
         raise LogueError("Did not receive a sysex message before timeout")
 
-    def inquiry(self):
+    def inquiry(self, full_inquiry: bool) -> bool:
         """
-        Perform an inquiry request reply handshake with the device.
+        Perform an inquiry request-reply handshake with the device.
+
+        Args:
+            full_inquiry: Set to true to print additional status information about the device.
+
+        Returns:
+            True on success, false otherwise
         """
         raise NotImplementedError()
 
-    def search(self):
+    def search(self) -> bool:
         """
         Perform an search for available KORG devices.
+
+        Returns:
+            True on success, false otherwise
         """
         raise NotImplementedError()

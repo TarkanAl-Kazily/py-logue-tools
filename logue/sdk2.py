@@ -993,7 +993,7 @@ class SDK2(logue.target.LogueTarget):
     def __init__(self, ioport, channel=1):
         super().__init__(ioport=ioport, channel=channel)
 
-    def inquiry(self, full_inquiry: bool = False):
+    def inquiry(self, full_inquiry: bool = False) -> bool:
         """
         From the NTS-1mkII_MIDIimp.txt:
         """
@@ -1008,11 +1008,15 @@ class SDK2(logue.target.LogueTarget):
                 for i in range(slots):
                     self.print_slot_status(mod_type, i)
 
-    def search(self):
+        return True
+
+    def search(self) -> bool:
         cmd = SearchDeviceRequest(0x55)
         rsp = self.write_cmd(cmd.to_message())
         rsp = SearchDeviceResponse.from_message(rsp)
         print(f"Device SDK version {rsp.major_ver}.{rsp.minor_ver}")
+
+        return True
 
     def save_data(self, file: typing.IO):
         save_data = {}
