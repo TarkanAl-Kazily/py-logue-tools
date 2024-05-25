@@ -83,6 +83,8 @@ class LogueTarget:
 
         raise LogueError("Did not receive a sysex message before timeout")
 
+    # Device specific APIs
+
     def inquiry(self, full_inquiry: bool) -> bool:
         """
         Perform an inquiry request-reply handshake with the device.
@@ -101,5 +103,72 @@ class LogueTarget:
 
         Returns:
             True on success, false otherwise
+        """
+        raise NotImplementedError()
+
+    def save_data(self, file: typing.IO) -> bool:
+        """
+        Save the device current settings to a file. File save formats are device specific.
+        TODO: This should support additional user arguments to provide greater customization based on device capabilities.
+
+        Args:
+            file: File object to write save data to.
+
+        Returns:
+            True on success, false otherwise.
+        """
+        raise NotImplementedError()
+
+    def load_data(self, file: typing.IO) -> bool:
+        """
+        Load settings from a file to the device. File save formats are device specific.
+        TODO: This should support additional user arguments to provide greater customization based on device capabilities.
+
+        Args:
+            file: File object to load save data from.
+
+        Returns:
+            True on success, false otherwise.
+        """
+        raise NotImplementedError()
+
+    def install_program(self, module: str, slot: int, filename: str) -> bool:
+        """
+        Install a user program to the device. Module program formats are device specific and should be built by the logue-sdk tools.
+
+        Args:
+            module: Module string ID, usually device specific.
+            slot: Slot number for the program to be installed to.
+            filename: Path to the program file to install.
+
+        Returns:
+            True on success, false otherwise.
+        """
+        raise NotImplementedError()
+
+    def fetch_program(self, module: str, slot: int, filename: str) -> bool:
+        """
+        Receive a user program from the device, saving it to a file.
+
+        Args:
+            module: Module string ID, usually device specific.
+            slot: Slot number for the program to be fetch from.
+            filename: Path to write the program file to.
+
+        Returns:
+            True on success, false otherwise.
+        """
+        raise NotImplementedError()
+
+    def clear_program(self, module: str, slot: int) -> bool:
+        """
+        Clear a user program from the device.
+
+        Args:
+            module: Type of the user program
+            slot: Slot to clear the program from
+
+        Returns:
+            True on success, false otherwise.
         """
         raise NotImplementedError()

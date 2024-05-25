@@ -1018,7 +1018,7 @@ class SDK2(logue.target.LogueTarget):
 
         return True
 
-    def save_data(self, file: typing.IO):
+    def save_data(self, file: typing.IO) -> bool:
         save_data = {}
         cmd = CurrentProgramDataDumpRequest()
         rsp = self.write_cmd(cmd.to_message())
@@ -1034,7 +1034,9 @@ class SDK2(logue.target.LogueTarget):
 
         json.dump(save_data, file)
 
-    def load_data(self, file: typing.IO):
+        return True
+
+    def load_data(self, file: typing.IO) -> bool:
         load_data = json.load(file)
         print(load_data["description"])
         cmd = CurrentProgramDataDump.from_message(
@@ -1044,7 +1046,7 @@ class SDK2(logue.target.LogueTarget):
         rsp = SystemExclusiveMessage.from_message(rsp)
         if not isinstance(rsp, StatusOperationCompleted):
             print(f"An error occurred - {type(rsp)}")
-            return
+            return False
 
         cmd = GlobalDataDump.from_message(
             mido.parse_string(load_data["GlobalDataDump"])
@@ -1053,17 +1055,11 @@ class SDK2(logue.target.LogueTarget):
         rsp = SystemExclusiveMessage.from_message(rsp)
         if not isinstance(rsp, StatusOperationCompleted):
             print(f"An error occurred - {type(rsp)}")
-            return
+            return False
 
-    def install_program(self, module: str, slot: int, filename: str):
-        """
-        Install a user program to the device.
+        return True
 
-        Args:
-            module: Type of the user program
-            slot: Slot to load the program into
-            filename: Filepath for the user program
-        """
+    def install_program(self, module: str, slot: int, filename: str) -> bool:
         self.print_slot_status(module, slot)
         module_id = SDK2.MODULE_IDS[module]
 
@@ -1092,19 +1088,12 @@ class SDK2(logue.target.LogueTarget):
             rsp = SystemExclusiveMessage.from_message(rsp)
             if not isinstance(rsp, StatusOperationCompleted):
                 print(f"An error occurred {rsp}")
-                return
+                return False
 
         print("Success")
+        return True
 
-    def fetch_program(self, module: str, slot: int, filename: str):
-        """
-        Receive a user program from the device.
-
-        Args:
-            module: Type of the user program
-            slot: Slot to fetch the program from
-            filename: Filepath to write the user program
-        """
+    def fetch_program(self, module: str, slot: int, filename: str) -> bool:
         self.print_slot_status(module, slot)
 
         module_id = SDK2.MODULE_IDS[module]
@@ -1131,7 +1120,9 @@ class SDK2(logue.target.LogueTarget):
         with open(filename, "wb") as f:
             f.write(bytes(program[8:]))
 
-    def clear_program(self, module: str, slot: int):
+        return True
+
+    def clear_program(self, module: str, slot: int) -> bool:
         """
         Clear a user program from the device.
 
@@ -1147,9 +1138,10 @@ class SDK2(logue.target.LogueTarget):
         rsp = SystemExclusiveMessage.from_message(rsp)
         if not isinstance(rsp, StatusOperationCompleted):
             print(f"An error occurred {rsp}")
-            return
+            return False
 
         print("Success")
+        return True
 
     def print_slot_status(self, module: str, slot: int):
         module_id = SDK2.MODULE_IDS[module]
