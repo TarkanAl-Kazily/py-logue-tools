@@ -1,5 +1,6 @@
 # Copyright 2024 Tarkan Al-Kazily
 
+import mido
 import mido.ports
 import time
 import typing
@@ -10,16 +11,21 @@ class LogueError(Exception):
 
 
 class LogueMessage:
-    """Base LogueMessage class specific message types can be subclassed from."""
+    """
+    Base LogueMessage class specific message types can be subclassed from.
 
-    def __init__(self, data: bytes):
+    Attributes:
+        data: List of ints in the range 0..255 that make up the contents of the MIDI sysex payload for the message.
+    """
+
+    def __init__(self, data: list[int]):
         self.data = data
 
-    def to_message(self):
+    def to_message(self) -> mido.Message:
         return mido.Message(type="sysex", data=self.data)
 
     @classmethod
-    def from_message(cls, message):
+    def from_message(cls, message: mido.Message) -> "LogueMessage":
         return LogueMessage(data=message.data)
 
 
