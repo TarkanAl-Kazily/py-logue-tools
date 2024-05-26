@@ -24,6 +24,22 @@ Tests are implemented with Python's unittest framework. Manually run all tests:
 python -m unittest discover tests/
 ```
 
+## Getting Started
+
+Create a new virtual environment and install the required module packages.
+```
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+Note: The `mido` port backend currently must be `python-rtmidi`. See issue #10 for more information.
+
+
+To contribute, also run the `pre-commit` setup steps:
+```
+pre-commit install
+```
 
 ## Links
 
