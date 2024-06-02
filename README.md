@@ -4,25 +4,13 @@ The `logue-sdk` from Korg is a cool way to get into DSP programming and building
 It's part of a line of synthesizers and effects modules that are hackable and sound great, but their
 host tools to interact with the devices seem to be lacking in open source and bug fixes.
 
-Fortunately, they adequately publish MIDI implementations for their devices, which includes the
+Fortunately, they publish MIDI implementations for their devices, which includes the
 programming and device interaction functions that their primary tool `logue-cli` normally would do.
 
-This repository is experimentation in implementing a custom version of the `logue-cli` tool's
-functionality based on these MIDI implementation specifications.
+This repository implements a custom version of the `logue-cli` tool's MIDI librarian and device management
+functionality based on these MIDI implementation specifications for the Korg NTS1 Mk2.
 
-## Lint and Tests
-
-Linting is enforced by the Python Black linter (through git pre-commit hooks).
-
-Manually run the linter:
-```bash
-pre-commit run --all-files
-```
-
-Tests are implemented with Python's unittest framework. Manually run all tests:
-```bash
-python -m unittest discover tests/
-```
+This project is unaffiliated with KORG.
 
 ## Getting Started
 
@@ -39,6 +27,22 @@ Note: The `mido` port backend currently must be `python-rtmidi`. See issue #10 f
 To contribute, also run the `pre-commit` setup steps:
 ```bash
 pre-commit install
+```
+
+See [Example Commands](#example-commands) for usage of the tool.
+
+## Lint and Tests
+
+Linting is enforced by the Python Black linter (through git pre-commit hooks).
+
+Manually run the linter:
+```bash
+pre-commit run --all-files
+```
+
+Tests are implemented with Python's unittest framework. Manually run all tests:
+```bash
+python -m unittest discover tests/
 ```
 
 ## Links
@@ -115,6 +119,8 @@ revfx slot 7 - EMPTY
 ```
 
 ### Saving/loading active settings
+
+Note: Save file format is not finalized, and may change in future versions.
 
 ```bash
 $ ./main.py -p2 --type NTS1Mk2 save --file save.json
